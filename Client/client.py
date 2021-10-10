@@ -118,7 +118,7 @@ check_token()
 for line in sys.stdin:
     if line=='\n': continue
     words = line.split()
-    if words[0] == 'help' || len(words)>1:
+    if words[0] == 'help' or len(words)>1:
         print_help()
     elif words[0] == 'email':
         get_email()

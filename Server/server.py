@@ -4,7 +4,6 @@ import flask
 from flask import request, jsonify
 import json
 import datetime
-import argparse
 import database
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
@@ -13,17 +12,7 @@ from google.oauth2.credentials import Credentials
 
 fav_activites = []
 SCOPES = ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/userinfo.email', 'openid']
-DB_HOST = "localhost"
-DB_PORT = 5432
 
-#Database can be on any server now
-parser = argparse.ArgumentParser()
-parser.add_argument('--dbhost', default=DB_HOST)
-parser.add_argument('--dbport', default=DB_PORT)
-args = parser.parse_args()
-
-database.set_host(args.dbhost)
-database.set_port(args.dbport)
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True

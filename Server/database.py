@@ -1,21 +1,26 @@
 import psycopg2
+from configparser import ConfigParser
 
-host = "localhost"
-port = 5432
+def config(filename='database.ini', section='postgresql'):
+    # create a parser
+    parser = ConfigParser()
+    # read config file
+    parser.read(filename)
 
-def set_host(new_host):
-    host = new_host
+    # get section, default to postgresql
+    db = {}
+    if parser.has_section(section):
+        params = parser.items(section)
+        for param in params:
+            db[param[0]] = param[1]
+    else:
+        raise Exception('Section {0} not found in the {1} file'.format(section, filename))
 
-def set_port(new_port):
-    port = new_port
+    return db
     
 def get_conn():
-    conn = psycopg2.connect(
-    host=host,
-    database="ignacy",
-    user="ignacy",
-    password="root",
-    port=port)
+    params = config()
+    conn = psycopg2.connect(**params)
     return conn
     
 def all_activities():
@@ -83,7 +88,6 @@ def delete_fav(email, name):
     email_id = get_email_id(email)
     conn = get_conn()
     cur = conn.cursor()
-    print("DELETE FROM fav_activities WHERE email_id = {} AND activity_id = {}".format(email_id, activity_id))
     cur.execute("DELETE FROM fav_activities WHERE email_id = %s AND activity_id = %s", (email_id, activity_id))
     conn.commit()
     cur.close()
