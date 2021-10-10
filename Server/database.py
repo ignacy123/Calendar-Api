@@ -83,6 +83,7 @@ def delete_fav(email, name):
     email_id = get_email_id(email)
     conn = get_conn()
     cur = conn.cursor()
+    print("DELETE FROM fav_activities WHERE email_id = {} AND activity_id = {}".format(email_id, activity_id))
     cur.execute("DELETE FROM fav_activities WHERE email_id = %s AND activity_id = %s", (email_id, activity_id))
     conn.commit()
     cur.close()

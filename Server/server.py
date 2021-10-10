@@ -49,7 +49,7 @@ def fav():
         return jsonify([name]), 200
     if flask.request.method == 'DELETE':
         name = request.args['name']
-        database.remove_fav(email, name)
+        database.delete_fav(email, name)
         return jsonify([name]), 200
     
     

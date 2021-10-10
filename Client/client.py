@@ -52,16 +52,30 @@ def list_fav():
         
 def add_new_fav():
     creds = get_credentials()
-    print("Choose your activity (number):")
+    print("Choose activity to add (number):")
     activities = list_all()
     number = int(input())
-    name = activities[number-1][1]
+    name = [(x, y) for (x, y) in activities if x == number][0][1]
     params = {'name' : name, 'credentials' : creds}
     try:
         r = requests.put(FAV_PATH, params = params)
     except:
         error()
     print(r.json())
+    
+def del_fav():
+    creds = get_credentials()
+    print("Choose activity to delete (number):")
+    activities = list_fav()
+    number = int(input())
+    name = [(x, y) for (x, y) in activities if x == number][0][1]
+    params = {'name' : name, 'credentials' : creds}
+    try:
+        r = requests.delete(FAV_PATH, params = params)
+    except:
+        error()
+    print(r.json())
+    
 
 def obtain_token():
     try:
@@ -98,21 +112,24 @@ def print_help():
     print("lall - list all available activities")
     print("lfav - list all favourite activities")
     print("afav - add a new favourite activity")
+    print("dfav - delete a favourite activity")
 
 check_token()
 for line in sys.stdin:
     if line=='\n': continue
     words = line.split()
-    if words[0] == 'help':
+    if words[0] == 'help' || len(words)>1:
         print_help()
-    elif words[0] == 'email' and len(words) == 1:
+    elif words[0] == 'email':
         get_email()
-    elif words[0] == 'lall' and len(words) == 1:
+    elif words[0] == 'lall':
         list_all()
-    elif words[0] == 'afav' and len(words) == 1:
-        add_new_fav()
-    elif words[0] == 'lfav' and len(words) == 1:
+    elif words[0] == 'lfav':
         list_fav()
+    elif words[0] == 'afav':
+        add_new_fav()
+    elif words[0] == 'dfav':
+        del_fav()
     else:
         print_help()
         
