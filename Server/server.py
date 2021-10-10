@@ -30,16 +30,29 @@ def fav():
     
     email = get_email_from_json_credentials(json.loads(request.args['credentials']))
     
-    if flask.request.method == 'GET':
+    if request.method == 'GET':
         return jsonify(database.fav_activities(email))
-    if flask.request.method == 'PUT':
+    if request.method == 'PUT':
         name = request.args['name']
         database.new_fav(email, name)
         return jsonify([name]), 200
-    if flask.request.method == 'DELETE':
+    if request.method == 'DELETE':
         name = request.args['name']
         database.delete_fav(email, name)
         return jsonify([name]), 200
+    
+@app.route('/event', methods=['PUT'])
+def event():
+    if 'credentials' not in request.args:
+        return "Please provide a Google Authentication token.", 400
+    if 'date' not in request.args:
+        return "Please choose a date.", 400
+    if 'name' not in request.args and request.method == 'PUT':
+        return "Please specify an activity.", 400
+    
+    if request.method == 'PUT':
+        return request.args, 200
+    
     
     
 @app.route('/email', methods=['GET'])

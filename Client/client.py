@@ -5,6 +5,7 @@ import argparse
 import webbrowser
 import requests
 import json
+from datetime import datetime
 
 PATH = "http://localhost:5000"
 parser = argparse.ArgumentParser()
@@ -15,10 +16,6 @@ ACCESS_PATH = args.path+"/access"
 EMAIL_PATH = args.path+"/email"
 LIST_ALL_PATH = args.path+"/lall"
 FAV_PATH = args.path+"/fav"
-
-def error():
-    print("Server down, aborting.")
-    sys.exit(-1)
     
 def get_email():
     creds = get_credentials()
@@ -76,6 +73,22 @@ def del_fav():
         error()
     print(r.json())
     
+def add_event():
+    print("Choose date (yy/mm/dd hh-mm):")
+    date_time = None
+    while(True):
+        line = input()
+        try:
+            date_time = datetime.strptime(line, '%y/%m/%d %H:%M')
+            break
+        except:
+            print("Sorry, but this isn't quite right. Try again.")
+    creds = get_credentials()
+    print("Choose activity to delete (number):")
+    activities = list_fav()
+    number = int(input())
+    name = [(x, y) for (x, y) in activities if x == number][0][1]
+    
 
 def obtain_token():
     try:
@@ -105,6 +118,10 @@ def get_credentials():
         data = json.load(f)
         return json.dumps(data)
 
+def error():
+    print("Server down, aborting.")
+    sys.exit(-1)
+
 def print_help():
     print("Available commands:")
     print("help - help")
@@ -113,6 +130,7 @@ def print_help():
     print("lfav - list all favourite activities")
     print("afav - add a new favourite activity")
     print("dfav - delete a favourite activity")
+    print("ae - add a new event to the calendar")
 
 check_token()
 for line in sys.stdin:
@@ -130,6 +148,8 @@ for line in sys.stdin:
         add_new_fav()
     elif words[0] == 'dfav':
         del_fav()
+    elif words[0] == 'ae':
+        add_event()
     else:
         print_help()
         
