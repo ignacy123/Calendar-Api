@@ -1,0 +1,6 @@
+Server/client_secret.json
+Server/database.ini
+Server/flask
+Server/__pycache__/*
+Google/token.json
+Client/token.json
