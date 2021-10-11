@@ -53,10 +53,10 @@ CREATE TABLE single_events (
     activity_id                 integer NOT NULL,
     start_time                  timestamp NOT NULL,
     end_time                    timestamp NOT NULL,
-    CONSTRAINT event_id PRIMARY KEY (id),
-    CONSTRAINT fk_events_email FOREIGN KEY (email_id) REFERENCES email(id),
-    CONSTRAINT fk_events_activities FOREIGN KEY (activity_id) REFERENCES activities(id),
-    CONSTRAINT correct_event CHECK (start_time < end_time)
+    CONSTRAINT single_event_id PRIMARY KEY (id),
+    CONSTRAINT fk_single_events_email FOREIGN KEY (email_id) REFERENCES email(id),
+    CONSTRAINT fk_single_events_activities FOREIGN KEY (activity_id) REFERENCES activities(id),
+    CONSTRAINT correct_single_event CHECK (start_time < end_time)
 );
 -- trigger to check if activity in event is email owner's favourite
 CREATE OR REPLACE FUNCTION single_event_fav_check() RETURNS TRIGGER AS $single_event_fav_check$
@@ -71,7 +71,7 @@ $single_event_fav_check$ LANGUAGE plpgsql;
 CREATE TRIGGER single_event_fav_check BEFORE INSERT OR UPDATE ON single_events
 FOR EACH ROW EXECUTE PROCEDURE single_event_fav_check();
 
--- trigger to check for potential overlaps
+-- trigger to check for potential overlaps between single events
 CREATE OR REPLACE FUNCTION single_event_check() RETURNS TRIGGER AS $single_event_check$
 DECLARE
 BEGIN
@@ -84,7 +84,30 @@ $single_event_check$ LANGUAGE plpgsql;
 CREATE TRIGGER single_event_check BEFORE INSERT OR UPDATE ON single_events
 FOR EACH ROW EXECUTE PROCEDURE single_event_check();
 
+
 INSERT INTO single_events (email_id, activity_id, start_time, end_time) VALUES (1, 3, '2019-04-28 08:20:00', '2019-04-28 10:20:00');
+
+DROP TABLE IF EXISTS recurrent_events CASCADE;
+CREATE TABLE recurrent_events (
+    id                      serial NOT NULL,
+    email_id                integer NOT NULL,
+    activity_id             integer NOT NULL,
+    start_time              timestamp NOT NULL,
+    end_time                timestamp NOT NULL,
+    type                    varchar(10),
+    CONSTRAINT recurrent_event_id PRIMARY KEY (id),
+    CONSTRAINT fk_recurrent_events_email FOREIGN KEY (email_id) REFERENCES email(id),
+    CONSTRAINT fk_recurrent_events_activities FOREIGN KEY (activity_id) REFERENCES activities(id),
+    CONSTRAINT correct_recurrent_event CHECK (start_time < end_time),
+    CONSTRAINT correct_type CHECK (type IN ('DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'))
+);
+
+
+INSERT INTO recurrent_events (email_id, activity_id, start_time, end_time, type) VALUES 
+(1, 3, '2021-10-12 10:00:00', '2021-10-12 12:00:00', 'DAILY'),
+(1, 4, '2021-10-13 16:00:00', '2021-10-13 18:00:00', 'WEEKLY'),
+(1, 8, '2021-10-14 14:00:00', '2021-10-14 15:00:00', 'MONTHLY'),
+(1, 12, '2021-10-15 20:00:00', '2021-10-15 21:00:00', 'YEARLY');
 
 
 
