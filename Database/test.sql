@@ -58,12 +58,25 @@ CREATE TABLE single_events (
     CONSTRAINT fk_events_activities FOREIGN KEY (activity_id) REFERENCES activities(id),
     CONSTRAINT correct_event CHECK (start_time < end_time)
 );
+-- trigger to check if activity in event is email owner's favourite
+CREATE OR REPLACE FUNCTION single_event_fav_check() RETURNS TRIGGER AS $single_event_fav_check$
+DECLARE
+BEGIN
+IF NOT EXISTS (SELECT id FROM fav_activities WHERE email_id = NEW.email_id AND activity_id = NEW.activity_id)
+    THEN RAISE EXCEPTION 'User cannot schedule an event with an activity that is not favourite.';
+END IF;
+RETURN NEW;
+END;
+$single_event_fav_check$ LANGUAGE plpgsql;
+CREATE TRIGGER single_event_fav_check BEFORE INSERT OR UPDATE ON single_events
+FOR EACH ROW EXECUTE PROCEDURE single_event_fav_check();
+
 -- trigger to check for potential overlaps
 CREATE OR REPLACE FUNCTION single_event_check() RETURNS TRIGGER AS $single_event_check$
 DECLARE
 BEGIN
 IF EXISTS ( SELECT * FROM single_events WHERE email_id = NEW.email_id AND ( (NEW.start_time <= start_time AND NEW.end_time  > start_time) OR (NEW.start_time > start_time AND NEW.start_time < end_time) ))
-THEN RAISE EXCEPTION 'This user is busy at this time.';
+    THEN RAISE EXCEPTION 'This user is busy at this time.';
 END IF;
 RETURN NEW;
 END;

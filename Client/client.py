@@ -16,6 +16,7 @@ ACCESS_PATH = args.path+"/access"
 EMAIL_PATH = args.path+"/email"
 LIST_ALL_PATH = args.path+"/lall"
 FAV_PATH = args.path+"/fav"
+EVENT_PATH = args.path+"/event"
     
 def get_email():
     creds = get_credentials()
@@ -42,6 +43,10 @@ def list_fav():
         r = requests.get(FAV_PATH, params = params)
     except:
         error()
+    if r.status_code == 400 and r.content.decode('UTF-8') == 'Wrong credentials.':
+        print("Your credentials are corrupt (expired or incorrect). Please log in with Google.")
+        os.remove('token.json')
+        return list_fav()
     for x in r.json():
         print("{} - {}".format(x[0], x[1]))
     return r.json()
@@ -49,45 +54,45 @@ def list_fav():
         
 def add_new_fav():
     creds = get_credentials()
-    print("Choose activity to add (number):")
-    activities = list_all()
-    number = int(input())
-    name = [(x, y) for (x, y) in activities if x == number][0][1]
+    name = get_activity_name(list_all)
     params = {'name' : name, 'credentials' : creds}
     try:
         r = requests.put(FAV_PATH, params = params)
     except:
         error()
-    print(r.json())
+    if r.status_code == 200:
+        print("Successfully added.")
+    else:
+        print("Something went wrong, try again.")
     
 def del_fav():
     creds = get_credentials()
-    print("Choose activity to delete (number):")
-    activities = list_fav()
-    number = int(input())
-    name = [(x, y) for (x, y) in activities if x == number][0][1]
+    name = get_activity_name(list_fav)
     params = {'name' : name, 'credentials' : creds}
     try:
         r = requests.delete(FAV_PATH, params = params)
     except:
         error()
-    print(r.json())
+    if r.status_code == 200:
+        print("Successfully deleted.")
+    else: 
+        print("Something went wrong, try again.")
     
 def add_event():
-    print("Choose date (yy/mm/dd hh-mm):")
-    date_time = None
-    while(True):
-        line = input()
-        try:
-            date_time = datetime.strptime(line, '%y/%m/%d %H:%M')
-            break
-        except:
-            print("Sorry, but this isn't quite right. Try again.")
     creds = get_credentials()
-    print("Choose activity to delete (number):")
-    activities = list_fav()
-    number = int(input())
-    name = [(x, y) for (x, y) in activities if x == number][0][1]
+    print("Choose start date (yy/mm/dd hh:mm):")
+    start_date = pick_date()
+    print("Choose end date (yy/mm/dd hh:mm):")
+    end_date = pick_date()
+    
+    creds = get_credentials()
+    name = get_activity_name(list_fav)
+    params = {'credentials' : creds, 'name' : name, 'start_date' : start_date, 'end_date' : end_date}
+    try:
+        r = requests.put(EVENT_PATH, params = params)
+    except:
+        error()
+    print(r.json())
     
 
 def obtain_token():
@@ -103,7 +108,7 @@ def obtain_token():
         while True:
             line = input()
             token_file.write(line)
-            if line == '}':
+            if line.endswith('}'):
                 break
             
 def check_token():
@@ -117,7 +122,26 @@ def get_credentials():
     with open('token.json',) as f:
         data = json.load(f)
         return json.dumps(data)
+    
+def pick_date():
+    while(True):
+        line = input()
+        try:
+            date = datetime.strptime(line, '%y/%m/%d %H:%M')
+            date = date.replace(tzinfo = dateutil.tz.tzoffset(None, time.localtime().tm_gmtoff))
+            return date
+        except:
+            print("Sorry, but this isn't quite right. Try again.")
 
+def get_activity_name(f):
+    print("Choose activity (number):")
+    activities = f()
+    while True:
+        number = int(input())
+        cands = [(x, y) for (x, y) in activities if x == number]
+        if(len(cands) > 0): return cands[0][1]
+        print("Wrong number. Try again.")
+    
 def error():
     print("Server down, aborting.")
     sys.exit(-1)
