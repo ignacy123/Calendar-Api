@@ -56,6 +56,7 @@ def event():
         return 'Wrong credentials.', 400
     
     if request.method == 'PUT':
+        json_creds = json.loads(request.args['credentials'])
         start_date = dateutil.parser.isoparse(request.args['start_date'])
         end_date = dateutil.parser.isoparse(request.args['end_date'])
         name = request.args['name']
@@ -67,6 +68,10 @@ def event():
             db.add_event(email, start_date, end_date, name)
         except:
             return 'Database error (most likely user busy at this time).', 400
+        try:
+            gs.add_event_to_google_calendar(json_creds, start_date, end_date, name)
+        except:
+            return 'Saved to database but failed to upload to Google.', 400
         return jsonify(request.args['name']), 200
     
 @app.route('/email', methods=['GET'])
@@ -90,9 +95,12 @@ def callback():
     creds_json = gs.code_to_creds_json(request.args['state'], request.args['code'])
     return creds_json, 200
 
-
-
 def handle_bad_request(e):
     return 'Bad request!', 400
-app.register_error_handler(400, handle_bad_request)
-app.run()
+
+def main():
+    app.register_error_handler(400, handle_bad_request)
+    app.run()
+
+if __name__ == '__main__':
+    main()
