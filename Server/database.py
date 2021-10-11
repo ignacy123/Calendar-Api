@@ -6,7 +6,6 @@ def config(filename='database.ini', section='postgresql'):
     parser = ConfigParser()
     # read config file
     parser.read(filename)
-
     # get section, default to postgresql
     db = {}
     if parser.has_section(section):
@@ -15,7 +14,6 @@ def config(filename='database.ini', section='postgresql'):
             db[param[0]] = param[1]
     else:
         raise Exception('Section {0} not found in the {1} file'.format(section, filename))
-
     return db
     
 def get_conn():
@@ -47,12 +45,11 @@ def fav_activities(email):
 def get_activity_id(name):
     conn = get_conn()
     cur = conn.cursor()
-    print(name)
     cur.execute("SELECT * FROM activities WHERE name = %s", (name, ))
     if cur.rowcount == 0:
         cur.close()
         conn.close()
-        raise NoSuchActivityException("Getting id of non-existent activity")
+        raise NoSuchActivityException("Getting id of a non-existent activity")
     id = cur.fetchone()[0]
     return id
 
@@ -74,7 +71,7 @@ def new_fav(email, name):
     email_id = get_email_id(email)
     conn = get_conn()
     cur = conn.cursor()
-    #when attempting to choose an activity that is already favourite, just ignore
+    #when attempting to choose an activity that is already a favourite, just ignore
     try:
         cur.execute("INSERT INTO fav_activities (email_id, activity_id) VALUES (%s, %s)", (email_id, activity_id))
     except psycopg2.errors.UniqueViolation as e:
@@ -93,6 +90,15 @@ def delete_fav(email, name):
     cur.close()
     conn.close()
 
-
+def add_event(email, start_date, end_date, name):
+    activity_id = get_activity_id(name)
+    email_id = get_email_id(email)
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO single_events (email_id, activity_id, start_time, end_time) VALUES (%s, %s, %s, %s)", (email_id, activity_id, start_date, end_date))
+    conn.commit()
+    cur.close()
+    conn.close()
+    
 class NoSuchActivityException(Exception):
     """A non-existant activity is requested"""

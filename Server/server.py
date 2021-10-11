@@ -1,16 +1,12 @@
 #!/bin/python3
-
 import flask 
 from flask import request, jsonify
 import json
 import datetime
-import database
+import dateutil.parser
+import database as db
+import google_service as gs
 import google.oauth2.credentials
-import google_auth_oauthlib.flow
-from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
-
-SCOPES = ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/userinfo.email', 'openid']
 
 
 app = flask.Flask(__name__)
@@ -18,7 +14,7 @@ app.config["DEBUG"] = True
 
 @app.route('/lall', methods=['GET'])
 def list_all():
-    return jsonify(database.all_activities())
+    return jsonify(db.all_activities())
 
 @app.route('/fav', methods=['GET', 'PUT', 'DELETE'])
 def fav():
@@ -27,17 +23,20 @@ def fav():
     if 'name' not in request.args and (flask.request.method == 'PUT' or flask.request.method == 'DELETE'):
         return "Please provide a name.", 400
     
-    email = get_email_from_json_credentials(json.loads(request.args['credentials']))
+    try:
+        email = gs.get_email_from_json_credentials(json.loads(request.args['credentials']))
+    except:
+        return 'Wrong credentials.', 400
     
     if request.method == 'GET':
-        return jsonify(database.fav_activities(email))
+        return jsonify(db.fav_activities(email))
     if request.method == 'PUT':
         name = request.args['name']
-        database.new_fav(email, name)
+        db.new_fav(email, name)
         return jsonify([name]), 200
     if request.method == 'DELETE':
         name = request.args['name']
-        database.delete_fav(email, name)
+        db.delete_fav(email, name)
         return jsonify([name]), 200
     
 @app.route('/event', methods=['PUT'])
@@ -51,15 +50,31 @@ def event():
     if 'name' not in request.args and request.method == 'PUT':
         return "Please specify an activity.", 400
     
+    try:
+        email = gs.get_email_from_json_credentials(json.loads(request.args['credentials']))
+    except:
+        return 'Wrong credentials.', 400
+    
     if request.method == 'PUT':
-        return request.args, 200
+        start_date = dateutil.parser.isoparse(request.args['start_date'])
+        end_date = dateutil.parser.isoparse(request.args['end_date'])
+        name = request.args['name']
+        if start_date >= end_date:
+            return 'Events ends before it starts', 400
+        if name not in [y for x, y in db.fav_activities(email)]:
+            return 'Activity has to be a favourite', 400
+        try:
+            db.add_event(email, start_date, end_date, name)
+        except:
+            return 'Database error (most likely user busy at this time).', 400
+        return jsonify(request.args['name']), 200
     
 @app.route('/email', methods=['GET'])
 def email():
     if 'credentials' not in request.args:
         return "Please provide a Google Authentication token.", 400
     try:
-        email = get_email_from_json_credentials(json.loads(request.args['credentials']))
+        email = gs.get_email_from_json_credentials(json.loads(request.args['credentials']))
     except:
         return 'Wrong credentials.', 400
     return email
@@ -67,32 +82,15 @@ def email():
 #Google OAuth2 related
 @app.route('/access')
 def access():
-    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        'client_secret.json',
-        scopes=SCOPES)
-    flow.redirect_uri = 'http://localhost:5000/oauth2callback'
-    authorization_url, state = flow.authorization_url(
-        approval_prompt='force',
-        access_type='offline',
-        include_granted_scopes='true')
+    authorization_url = gs.gen_auth_url()
     return jsonify({'url': authorization_url}), 200
 
 @app.route('/oauth2callback')
 def callback():
-    state = request.args['state']
-    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        'client_secret.json',
-        scopes=SCOPES,
-        state=state)
-    flow.redirect_uri = 'http://localhost:5000/oauth2callback'
-    flow.fetch_token(code = request.args['code'])
-    return flow.credentials.to_json(), 200
+    creds_json = gs.code_to_creds_json(request.args['state'], request.args['code'])
+    return creds_json, 200
 
-def get_email_from_json_credentials(json_creds):
-    creds = Credentials.from_authorized_user_info(json_creds, SCOPES)
-    service = build('oauth2', 'v2', credentials=creds)
-    user_info = service.userinfo().get().execute()
-    return user_info['email']
+
 
 def handle_bad_request(e):
     return 'Bad request!', 400
