@@ -19,6 +19,7 @@ EMAIL_PATH = args.path+"/email"
 LIST_ALL_PATH = args.path+"/lall"
 FAV_PATH = args.path+"/fav"
 EVENT_PATH = args.path+"/event"
+rec_dict = {'n' : None, 'd' : "DAILY", 'w' : "WEEKLY", 'm' : "MONTHLY", 'y' : "YEARLY"}
     
 def get_email():
     creds = get_credentials()
@@ -86,11 +87,14 @@ def add_event():
     start_date = pick_date()
     print("Choose end date (yy/mm/dd hh:mm):")
     end_date = pick_date()
-    
+    recurrence = pick_recurrence()
     creds = get_credentials()
     name = get_activity_name(list_fav)
     params = {'credentials' : creds, 'name' : name, 'start_date' : start_date, 'end_date' : end_date}
+    if recurrence:
+        params['recurrence'] = recurrence
     try:
+        print(params)
         r = requests.put(EVENT_PATH, params = params)
     except:
         error()
@@ -134,6 +138,15 @@ def pick_date():
             return date
         except:
             print("Sorry, but this isn't quite right. Try again.")
+            
+def pick_recurrence():
+    while True:
+        print("Recurrent?\n n - No \n d - Daily \n w - weekly \n m - monthly \n y - yearly")
+        line = input()
+        if line in ['n', 'd', 'w', 'm', 'y']:
+            rec = rec_dict[line]
+            return rec
+        print("Sorry, try again.")
 
 def get_activity_name(f):
     print("Choose activity (number):")

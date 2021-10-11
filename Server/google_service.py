@@ -1,6 +1,7 @@
 import google_auth_oauthlib.flow
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+import tzlocal
 
 SCOPES = ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/userinfo.email', 'openid']
 
@@ -30,8 +31,13 @@ def get_email_from_json_credentials(json_creds):
     user_info = service.userinfo().get().execute()
     return user_info['email']
 
-def add_event_to_google_calendar(json_creds, start_time, end_time, name):
+def add_event_to_google_calendar(json_creds, start_time, end_time, name, recurrence):
     creds = Credentials.from_authorized_user_info(json_creds, SCOPES)
     service = build('calendar', 'v3', credentials=creds)
-    body = {"summary" : name, "start" : {"dateTime": start_time.isoformat()}, "end" : {"dateTime": end_time.isoformat()}}
+    body = None
+    if recurrence:
+        body = {"summary" : name, "start" : {"timeZone": str(tzlocal.get_localzone()), "dateTime": start_time.isoformat()}, "end" : {"timeZone": str(tzlocal.get_localzone()), "dateTime": end_time.isoformat()}, 
+                "recurrence" : ['RRULE:FREQ={}'.format(recurrence)]}
+    else:
+        body = {"summary" : name, "start" : {"dateTime": start_time.isoformat()}, "end" : {"dateTime": end_time.isoformat()}}
     service.events().insert(calendarId = "primary", body = body).execute()

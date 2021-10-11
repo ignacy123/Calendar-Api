@@ -90,12 +90,15 @@ def delete_fav(email, name):
     cur.close()
     conn.close()
 
-def add_event(email, start_date, end_date, name):
+def add_event(email, start_date, end_date, name, recurrence):
     activity_id = get_activity_id(name)
     email_id = get_email_id(email)
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("INSERT INTO single_events (email_id, activity_id, start_time, end_time) VALUES (%s, %s, %s, %s)", (email_id, activity_id, start_date, end_date))
+    if recurrence:
+        cur.execute("INSERT INTO recurrent_events (email_id, activity_id, start_time, end_time, type) VALUES (%s, %s, %s, %s, %s)", (email_id, activity_id, start_date, end_date, recurrence))
+    else:
+        cur.execute("INSERT INTO single_events (email_id, activity_id, start_time, end_time) VALUES (%s, %s, %s, %s)", (email_id, activity_id, start_date, end_date))
     conn.commit()
     cur.close()
     conn.close()

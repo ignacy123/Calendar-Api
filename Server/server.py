@@ -56,6 +56,11 @@ def event():
         return 'Wrong credentials.', 400
     
     if request.method == 'PUT':
+        if 'recurrence' in request.args and request.args['recurrence'] not in ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']:
+            return "Unknown recurrence", 400
+        recurrence = None
+        if 'recurrence' in request.args:
+            recurrence = request.args['recurrence']
         json_creds = json.loads(request.args['credentials'])
         start_date = dateutil.parser.isoparse(request.args['start_date'])
         end_date = dateutil.parser.isoparse(request.args['end_date'])
@@ -65,11 +70,11 @@ def event():
         if name not in [y for x, y in db.fav_activities(email)]:
             return 'Activity has to be a favourite', 400
         try:
-            db.add_event(email, start_date, end_date, name)
+            db.add_event(email, start_date, end_date, name, recurrence)
         except:
             return 'Database error (most likely user busy at this time).', 400
         try:
-            gs.add_event_to_google_calendar(json_creds, start_date, end_date, name)
+            gs.add_event_to_google_calendar(json_creds, start_date, end_date, name, recurrence)
         except:
             return 'Saved to database but failed to upload to Google.', 400
         return jsonify(request.args['name']), 200
