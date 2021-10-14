@@ -3,3 +3,6 @@
 3. Zwracane informacje po operacjach, kody html
 4. Invalid token (block permissions but don't delete token.json)
 5. Returned objects after success
+6. Hide Client id and client secret from url
+7. Recurrent events which are close to the maximum length and two of them can occur on the same day
+8. Monthly events only until 28th day of the month

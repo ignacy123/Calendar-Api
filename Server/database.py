@@ -96,7 +96,7 @@ def get_activities(date, email):
     email_id = get_email_id(email)
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT get_activities(%s, %s)", (date, email_id))
+            cur.execute("SELECT name, to_json(start_time) AS start_time, to_json(end_time) AS end_time, type FROM get_activities(%s, %s)", (date, email_id))
             rows = cur.fetchall()
             return rows
     

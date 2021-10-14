@@ -83,7 +83,7 @@ def event():
     
     if request.method == 'GET':
         date = dateutil.parser.isoparse(request.args['date'])
-        res = db.get_activities(date, email)
+        res = {'activities' : db.get_activities(date, email)}
         return jsonify(res)
         
     
