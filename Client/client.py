@@ -94,7 +94,6 @@ def add_event():
     if recurrence:
         params['recurrence'] = recurrence
     try:
-        print(params)
         r = requests.put(EVENT_PATH, params = params)
     except:
         error()
