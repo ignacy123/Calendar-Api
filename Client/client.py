@@ -98,6 +98,18 @@ def add_event():
     except:
         error()
     print(r.json())
+
+def list_events():
+    creds = get_credentials()
+    print("Choose start date (yy/mm/dd):")
+    date = pick_date(hours_minutes = False)
+    params = {'credentials' : creds, 'date' : date}
+    try:
+        r = requests.get(EVENT_PATH, params = params)
+    except:
+        error()
+    print(r.json())
+    
     
 
 def obtain_token():
@@ -128,11 +140,14 @@ def get_credentials():
         data = json.load(f)
         return json.dumps(data)
     
-def pick_date():
+def pick_date(hours_minutes = True):
+    pattern = '%y/%m/%d %H:%M'
+    if not hours_minutes:
+        pattern = '%y/%m/%d'
     while(True):
         line = input()
         try:
-            date = datetime.strptime(line, '%y/%m/%d %H:%M')
+            date = datetime.strptime(line, pattern)
             date = date.replace(tzinfo = dateutil.tz.tzoffset(None, time.localtime().tm_gmtoff))
             return date
         except:
@@ -169,6 +184,7 @@ def print_help():
     print("afav - add a new favourite activity")
     print("dfav - delete a favourite activity")
     print("ae - add a new event to the calendar")
+    print("le - list events for a given day")
 
 check_token()
 for line in sys.stdin:
@@ -188,6 +204,8 @@ for line in sys.stdin:
         del_fav()
     elif words[0] == 'ae':
         add_event()
+    elif words[0] == 'le':
+        list_events()
     else:
         print_help()
         

@@ -64,14 +64,16 @@ FOR EACH ROW EXECUTE PROCEDURE single_event_check();
 
 DROP FUNCTION IF EXISTS get_single_activities CASCADE;
 
-CREATE OR REPLACE FUNCTION get_single_activities(timestamptz)
+CREATE OR REPLACE FUNCTION get_single_activities(timestamptz, integer)
     RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz) AS
 $func$
 BEGIN
     RETURN QUERY 
-    SELECT a.name, r.start_time, r.end_time FROM single_events AS r LEFT OUTER JOIN activities AS a ON r.activity_id = a.id WHERE 
+    SELECT a.name, r.start_time, r.end_time FROM single_events AS r LEFT OUTER JOIN activities AS a ON r.activity_id = a.id WHERE (
     (r.end_time >= $1 AND r.end_time <= $1 + '1 day'::interval)
-    OR ($1 + '1 day'::interval >= r.start_time AND $1 + '1 day'::interval <= r.end_time);
+    OR ($1 + '1 day'::interval >= r.start_time AND $1 + '1 day'::interval <= r.end_time)
+    )
+    AND r.email_id = $2;
 END
 $func$ LANGUAGE plpgsql;
 
@@ -95,14 +97,15 @@ FOR EACH ROW EXECUTE PROCEDURE event_fav_check();
 
 DROP FUNCTION IF EXISTS get_dailies CASCADE;
 
-CREATE OR REPLACE FUNCTION get_dailies(timestamptz) 
+CREATE OR REPLACE FUNCTION get_dailies(timestamptz, integer) 
     RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz, type varchar(10)) AS
 $func$
 BEGIN
     RETURN QUERY 
     SELECT a.name, r.start_time, r.end_time, r.type FROM recurrent_events AS r LEFT OUTER JOIN activities AS a ON r.activity_id = a.id WHERE 
     r.start_time < $1 + '1 day'::interval
-    AND r.type = 'DAILY';
+    AND r.type = 'DAILY'
+    AND r.email_id = $2;
 END
 $func$ LANGUAGE plpgsql;
 
@@ -125,7 +128,7 @@ $func$ LANGUAGE plpgsql;
 
 DROP FUNCTION IF EXISTS get_weeklies CASCADE;
 
-CREATE OR REPLACE FUNCTION get_weeklies(timestamptz) 
+CREATE OR REPLACE FUNCTION get_weeklies(timestamptz, integer) 
     RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz, type varchar(10)) AS
 $func$
 BEGIN
@@ -138,13 +141,14 @@ BEGIN
     (EXTRACT (isodow FROM r.start_time) >= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) >= EXTRACT (isodow FROM $1) AND (EXTRACT (isodow FROM r.start_time) > EXTRACT (isodow FROM r.end_time)))
     )
     AND r.start_time < $1 + '1 day'::interval
-    AND r.type = 'WEEKLY';
+    AND r.type = 'WEEKLY'
+    AND r.email_id = $2;
 END
 $func$ LANGUAGE plpgsql;
 
 DROP FUNCTION IF EXISTS get_monthlies CASCADE;
 
-CREATE OR REPLACE FUNCTION get_monthlies(timestamptz) 
+CREATE OR REPLACE FUNCTION get_monthlies(timestamptz, integer) 
     RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz, type varchar(10)) AS
 $func$
 BEGIN
@@ -157,7 +161,8 @@ BEGIN
     (EXTRACT (day FROM r.start_time) >= EXTRACT (day FROM $1) AND EXTRACT (day FROM r.end_time) >= EXTRACT (day FROM $1) AND (EXTRACT (day FROM r.start_time) > EXTRACT (day FROM r.end_time)))
     )
     AND r.start_time < $1 + '1 day'::interval
-    AND r.type = 'MONTHLY';
+    AND r.type = 'MONTHLY'
+    AND r.email_id = $2;
 END
 $func$ LANGUAGE plpgsql;
 
@@ -205,7 +210,7 @@ $func$ LANGUAGE plpgsql;
 
 DROP FUNCTION IF EXISTS get_yearlies CASCADE;
 
-CREATE OR REPLACE FUNCTION get_yearlies(timestamptz) 
+CREATE OR REPLACE FUNCTION get_yearlies(timestamptz, integer) 
     RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz, type varchar(10)) AS
 $func$
 BEGIN
@@ -218,26 +223,27 @@ BEGIN
     (SELECT cmp_timestamptz_soe($1, r.start_time) AND (SELECT cmp_timestamptz_soe($1, r.end_time)) AND (SELECT cmp_timestamptz_s(r.end_time, r.start_time)))
     )
     AND r.start_time < $1 + '1 day'::interval
-    AND r.type = 'YEARLY';
+    AND r.type = 'YEARLY'
+    AND r.email_id = $2;
 END
 $func$ LANGUAGE plpgsql;
 
 DROP FUNCTION IF EXISTS get_activities CASCADE;
 
-CREATE OR REPLACE FUNCTION get_activities(timestamptz) 
+CREATE OR REPLACE FUNCTION get_activities(timestamptz, integer) 
     RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz, type varchar(10)) AS
 $func$
 BEGIN
     RETURN QUERY 
-    SELECT g.name, g.start_time, g.end_time, NULL FROM get_single_activities($1) AS g
+    SELECT g.name, g.start_time, g.end_time, NULL FROM get_single_activities($1, $2) AS g
     UNION
-    SELECT g.name, g.start_time, g.end_time, g.type FROM get_dailies($1) AS g
+    SELECT g.name, g.start_time, g.end_time, g.type FROM get_dailies($1, $2) AS g
     UNION
-    SELECT g.name, g.start_time, g.end_time, g.type FROM get_weeklies($1) AS g
+    SELECT g.name, g.start_time, g.end_time, g.type FROM get_weeklies($1, $2) AS g
     UNION
-    SELECT g.name, g.start_time, g.end_time, g.type FROM get_monthlies($1) AS g
+    SELECT g.name, g.start_time, g.end_time, g.type FROM get_monthlies($1, $2) AS g
     UNION
-    SELECT g.name, g.start_time, g.end_time, g.type FROM get_yearlies($1) AS g
+    SELECT g.name, g.start_time, g.end_time, g.type FROM get_yearlies($1, $2) AS g
     ORDER BY 4;
 END
 $func$ LANGUAGE plpgsql;

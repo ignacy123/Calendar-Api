@@ -39,14 +39,16 @@ def fav():
         db.delete_fav(email, name)
         return jsonify([name]), 200
     
-@app.route('/event', methods=['PUT'])
+@app.route('/event', methods=['PUT', 'GET'])
 def event():
     if 'credentials' not in request.args:
         return "Please provide a Google Authentication token.", 400
-    if 'start_date' not in request.args:
+    if 'start_date' not in request.args and request.method == 'PUT':
         return "Please choose a start_date.", 400
-    if 'end_date' not in request.args:
+    if 'end_date' not in request.args and request.method == 'PUT':
         return "Please choose an end_date.", 400
+    if 'date' not in request.args and request.method == 'GET':
+        return "Please choose a date.", 400
     if 'name' not in request.args and request.method == 'PUT':
         return "Please specify an activity.", 400
     
@@ -72,12 +74,18 @@ def event():
         try:
             db.add_event(email, start_date, end_date, name, recurrence)
         except:
-            return 'Database error (most likely user busy at this time).', 400
+            return 'Database error.', 400
         try:
             gs.add_event_to_google_calendar(json_creds, start_date, end_date, name, recurrence)
         except:
             return 'Saved to database but failed to upload to Google.', 400
         return jsonify(request.args['name']), 200
+    
+    if request.method == 'GET':
+        date = dateutil.parser.isoparse(request.args['date'])
+        res = db.get_activities(date, email)
+        return jsonify(res)
+        
     
 @app.route('/email', methods=['GET'])
 def email():

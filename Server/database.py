@@ -90,6 +90,15 @@ def add_event(email, start_date, end_date, name, recurrence):
             else:
                 cur.execute("INSERT INTO single_events (email_id, activity_id, start_time, end_time) VALUES (%s, %s, %s, %s)", (email_id, activity_id, start_date, end_date))
             conn.commit()
+            
+def get_activities(date, email):
+    date = date.replace(minute = 0, second = 0)
+    email_id = get_email_id(email)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT get_activities(%s, %s)", (date, email_id))
+            rows = cur.fetchall()
+            return rows
     
 class NoSuchActivityException(Exception):
     """A non-existant activity is requested"""
