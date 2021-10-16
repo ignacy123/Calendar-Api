@@ -102,6 +102,15 @@ BEGIN
 IF NEW.type = 'DAILY' AND EXTRACT (epoch FROM NEW.end_time - NEW.start_time) >= 60*60*24
     THEN RAISE EXCEPTION 'Daily activity cannot be longer than 24 hours.';
 END IF;
+IF NEW.type = 'WEEKLY' AND EXTRACT (epoch FROM NEW.end_time - NEW.start_time) >= 60*60*24*7
+    THEN RAISE EXCEPTION 'Weekly activity cannot be longer than 7 days.';
+END IF;
+IF NEW.type = 'MONTHLY' AND EXTRACT (epoch FROM NEW.end_time - NEW.start_time) >= 60*60*24*28
+    THEN RAISE EXCEPTION 'Monthly activity cannot be longer than 28 days.';
+END IF;
+IF NEW.type = 'YEARLY' AND EXTRACT (epoch FROM NEW.end_time - NEW.start_time) >= 60*60*24*365
+    THEN RAISE EXCEPTION 'Yearly activity cannot be longer than 365 days.';
+END IF;
 RETURN NEW;
 END;
 $recurrent_event_check$ LANGUAGE plpgsql;
@@ -122,23 +131,6 @@ BEGIN
 END
 $func$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION get_weeklies(timestamptz) 
-    RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz, type varchar(10)) AS
-$func$
-BEGIN
-    RETURN QUERY 
-    SELECT a.name, r.start_time, r.end_time, r.type FROM recurrent_events AS r LEFT OUTER JOIN activities AS a ON r.activity_id = a.id WHERE (
-    (EXTRACT (isodow FROM r.start_time) <= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) >= EXTRACT (isodow FROM $1)) 
-    OR
-    (EXTRACT (isodow FROM r.start_time) <= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) <= EXTRACT (isodow FROM $1) AND (EXTRACT (isodow FROM r.start_time) > EXTRACT (isodow FROM r.end_time)))
-    OR
-    (EXTRACT (isodow FROM r.start_time) >= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) >= EXTRACT (isodow FROM $1) AND (EXTRACT (isodow FROM r.start_time) > EXTRACT (isodow FROM r.end_time)))
-    )
-    AND r.start_time < $1 + '1 day'::interval
-    AND r.type = 'WEEKLY';
-END
-$func$ LANGUAGE plpgsql;
-
 DROP FUNCTION IF EXISTS get_weeklies CASCADE;
 
 CREATE OR REPLACE FUNCTION get_weeklies(timestamptz, integer) 
@@ -147,11 +139,11 @@ $func$
 BEGIN
     RETURN QUERY 
     SELECT a.name, r.start_time, r.end_time, r.type FROM recurrent_events AS r LEFT OUTER JOIN activities AS a ON r.activity_id = a.id WHERE (
-    (EXTRACT (isodow FROM r.start_time) <= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) >= EXTRACT (isodow FROM $1)) 
+    (EXTRACT (isodow FROM r.start_time::timestamp) <= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time::timestamp) >= EXTRACT (isodow FROM $1::timestamp)) 
     OR
-    (EXTRACT (isodow FROM r.start_time) <= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) <= EXTRACT (isodow FROM $1) AND (EXTRACT (isodow FROM r.start_time) > EXTRACT (isodow FROM r.end_time)))
+    (EXTRACT (isodow FROM r.start_time::timestamp) <= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time::timestamp) <= EXTRACT (isodow FROM $1::timestamp) AND (EXTRACT (isodow FROM r.start_time::timestamp) > EXTRACT (isodow FROM r.end_time::timestamp)))
     OR
-    (EXTRACT (isodow FROM r.start_time) >= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) >= EXTRACT (isodow FROM $1) AND (EXTRACT (isodow FROM r.start_time) > EXTRACT (isodow FROM r.end_time)))
+    (EXTRACT (isodow FROM r.start_time::timestamp) >= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time::timestamp) >= EXTRACT (isodow FROM $1::timestamp) AND (EXTRACT (isodow FROM r.start_time::timestamp) > EXTRACT (isodow FROM r.end_time::timestamp)))
     )
     AND r.start_time < $1 + '1 day'::interval
     AND r.type = 'WEEKLY'
@@ -307,6 +299,7 @@ INSERT INTO recurrent_events (email_id, activity_id, start_time, end_time, type)
 (1, 7, '2021-10-06 15:00:00', '2021-10-06 17:00:00', 'WEEKLY'),
 (1, 9, '2021-10-13 15:00:00', '2021-10-13 17:00:00', 'WEEKLY'),
 (1, 10, '2021-10-20 15:00:00', '2021-10-20 17:00:00', 'WEEKLY'),
+(1, 7, '2021-10-16 10:00:00+02','2021-10-23 09:59:00+02', 'WEEKLY'),
 (1, 8, '2021-10-14 14:00:00', '2021-10-14 15:00:00', 'MONTHLY'),
 (1, 11, '2021-08-30 14:00:00', '2021-09-10 15:00:00', 'MONTHLY'),
 (1, 2, '2021-08-17 14:00:00', '2021-08-17 16:00:00', 'MONTHLY'),
@@ -314,8 +307,8 @@ INSERT INTO recurrent_events (email_id, activity_id, start_time, end_time, type)
 (1, 5, '2021-09-20 10:00:00', '2021-09-20 16:00:00', 'MONTHLY'),
 (1, 5, '2021-06-30 10:00:00', '2021-07-01 09:00:00', 'MONTHLY'),
 (1, 12, '2021-10-15 20:00:00', '2021-10-15 21:00:00', 'YEARLY'),
-(1, 3, '2020-01-07 20:00:00', '2021-08-31 21:00:00', 'YEARLY'),
+(1, 3, '2020-01-07 20:00:00', '2020-08-31 21:00:00', 'YEARLY'),
 (1, 11, '2020-12-10 20:00:00', '2021-03-11 21:00:00', 'YEARLY'),
 (1, 11, '2020-07-09 20:00:00', '2021-01-10 21:00:00', 'YEARLY'),
 (1, 11, '2020-05-05 20:00:00', '2020-05-05 21:00:00', 'YEARLY'),
-(1, 4, '2020-03-03 20:00:00', '2021-07-07 21:00:00', 'YEARLY');
+(1, 4, '2020-03-03 20:00:00', '2020-07-07 21:00:00', 'YEARLY');

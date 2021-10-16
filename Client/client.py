@@ -210,9 +210,9 @@ def calculate_start_end(date, start_date, end_date, recurrence):
             new_start_date = start_date + timedelta(days = 7*amount_of_weeks)
             new_end_date = end_date + timedelta(days = 7*amount_of_weeks)
             return [new_start_date], [new_end_date]
-    #assuming MONTHLY event is no longer than 1 month
+    #assuming MONTHLY event is no longer than 27 days
     elif recurrence == 'MONTHLY':
-        if start_date.day == end_date.day and (start_date.day + timedelta(days = 27)) < end_date and start_date.day == date.day:
+        if start_date.day == end_date.day and (start_date + timedelta(days = 27)) < end_date and start_date.day == date.day:
             prev_month = date.month-1 if date.month > 1 else 12
             year_of_prev_month = date.year if date.month > 1 else date.year - 1
             next_month = date.month+1 if date.month < 12 else 1

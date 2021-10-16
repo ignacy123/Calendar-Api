@@ -92,7 +92,7 @@ def add_event(email, start_date, end_date, name, recurrence):
             conn.commit()
             
 def get_activities(date, email):
-    date = date.replace(minute = 0, second = 0)
+    date = date.replace(minute = 0, second = 0, tzinfo = None)
     email_id = get_email_id(email)
     with get_conn() as conn:
         with conn.cursor() as cur:
