@@ -41,7 +41,7 @@ CREATE OR REPLACE FUNCTION event_fav_check() RETURNS TRIGGER AS $event_fav_check
 DECLARE
 BEGIN
 IF NOT EXISTS (SELECT id FROM fav_activities WHERE email_id = NEW.email_id AND activity_id = NEW.activity_id)
-    THEN RAISE EXCEPTION 'User cannot schedule an event with an activity that is not favourite.';
+    THEN RAISE EXCEPTION 'User cannot schedule an event with an activity that is not a favourite.';
 END IF;
 RETURN NEW;
 END;
@@ -117,6 +117,24 @@ $recurrent_event_check$ LANGUAGE plpgsql;
 CREATE TRIGGER recurrent_event_check BEFORE INSERT OR UPDATE ON recurrent_events
 FOR EACH ROW EXECUTE PROCEDURE recurrent_event_check();
 
+--trigger to check if a monthly event starts or ends on a day with number >28 (such event cant be monthly cyclic because calendar)
+CREATE OR REPLACE FUNCTION recurrent_monthly_check() RETURNS TRIGGER AS $recurrent_monthly_check$
+DECLARE
+BEGIN
+IF NEW.type = 'MONTHLY' AND EXTRACT (day FROM NEW.start_time::timestamp) > 28
+    THEN RAISE EXCEPTION 'Monthly activity cannot start on a day with number greater than 28.';
+END IF;
+IF NEW.type = 'MONTHLY' AND EXTRACT (day FROM NEW.end_time::timestamp) > 28
+    THEN RAISE EXCEPTION 'Monthly activity cannot end on a day with number greater than 28.';
+END IF;
+RETURN NEW;
+END;
+$recurrent_monthly_check$ LANGUAGE plpgsql;
+CREATE TRIGGER recurrent_monthly_check BEFORE INSERT OR UPDATE ON recurrent_events
+FOR EACH ROW EXECUTE PROCEDURE recurrent_monthly_check();
+
+
+--get daily events that will occur on given timestamptz
 DROP FUNCTION IF EXISTS get_dailies CASCADE;
 
 CREATE OR REPLACE FUNCTION get_dailies(timestamptz, integer) 
@@ -131,6 +149,7 @@ BEGIN
 END
 $func$ LANGUAGE plpgsql;
 
+--get weekly events that will occur on given timestamptz
 DROP FUNCTION IF EXISTS get_weeklies CASCADE;
 
 CREATE OR REPLACE FUNCTION get_weeklies(timestamptz, integer) 
@@ -151,6 +170,7 @@ BEGIN
 END
 $func$ LANGUAGE plpgsql;
 
+--get monthly events that will occur on given timestamptz
 DROP FUNCTION IF EXISTS get_monthlies CASCADE;
 
 CREATE OR REPLACE FUNCTION get_monthlies(timestamptz, integer) 
@@ -213,6 +233,7 @@ BEGIN
 END
 $func$ LANGUAGE plpgsql;
 
+--get yearly events that will occur on given timestamptz
 DROP FUNCTION IF EXISTS get_yearlies CASCADE;
 
 CREATE OR REPLACE FUNCTION get_yearlies(timestamptz, integer) 
@@ -301,11 +322,11 @@ INSERT INTO recurrent_events (email_id, activity_id, start_time, end_time, type)
 (1, 10, '2021-10-20 15:00:00', '2021-10-20 17:00:00', 'WEEKLY'),
 (1, 7, '2021-10-16 10:00:00+02','2021-10-23 09:59:00+02', 'WEEKLY'),
 (1, 8, '2021-10-14 14:00:00', '2021-10-14 15:00:00', 'MONTHLY'),
-(1, 11, '2021-08-30 14:00:00', '2021-09-10 15:00:00', 'MONTHLY'),
+(1, 11, '2021-08-28 14:00:00', '2021-09-10 15:00:00', 'MONTHLY'),
 (1, 2, '2021-08-17 14:00:00', '2021-08-17 16:00:00', 'MONTHLY'),
-(1, 1, '2021-10-17 14:00:00', '2021-10-30 16:00:00', 'MONTHLY'),
+(1, 1, '2021-10-17 14:00:00', '2021-10-28 16:00:00', 'MONTHLY'),
 (1, 5, '2021-09-20 10:00:00', '2021-09-20 16:00:00', 'MONTHLY'),
-(1, 5, '2021-06-30 10:00:00', '2021-07-01 09:00:00', 'MONTHLY'),
+(1, 5, '2021-06-28 10:00:00', '2021-07-01 09:00:00', 'MONTHLY'),
 (1, 12, '2021-10-15 20:00:00', '2021-10-15 21:00:00', 'YEARLY'),
 (1, 3, '2020-01-07 20:00:00', '2020-08-31 21:00:00', 'YEARLY'),
 (1, 11, '2020-12-10 20:00:00', '2021-03-11 21:00:00', 'YEARLY'),
