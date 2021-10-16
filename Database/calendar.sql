@@ -95,6 +95,19 @@ CREATE TABLE recurrent_events (
 CREATE TRIGGER recurrent_event_fav_check BEFORE INSERT OR UPDATE ON recurrent_events
 FOR EACH ROW EXECUTE PROCEDURE event_fav_check();
 
+--trigger to perform sanity checks on recurrent activites - dailies can't be longer than 24 hours, weeklies than 7 days, monthlies than 28 days, yearlies than 365 days
+CREATE OR REPLACE FUNCTION recurrent_event_check() RETURNS TRIGGER AS $recurrent_event_check$
+DECLARE
+BEGIN
+IF NEW.type = 'DAILY' AND EXTRACT (epoch FROM NEW.end_time - NEW.start_time) >= 60*60*24
+    THEN RAISE EXCEPTION 'Daily activity cannot be longer than 24 hours.';
+END IF;
+RETURN NEW;
+END;
+$recurrent_event_check$ LANGUAGE plpgsql;
+CREATE TRIGGER recurrent_event_check BEFORE INSERT OR UPDATE ON recurrent_events
+FOR EACH ROW EXECUTE PROCEDURE recurrent_event_check();
+
 DROP FUNCTION IF EXISTS get_dailies CASCADE;
 
 CREATE OR REPLACE FUNCTION get_dailies(timestamptz, integer) 
