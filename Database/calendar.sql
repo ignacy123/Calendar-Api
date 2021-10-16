@@ -139,11 +139,11 @@ $func$
 BEGIN
     RETURN QUERY 
     SELECT a.name, r.start_time, r.end_time, r.type FROM recurrent_events AS r LEFT OUTER JOIN activities AS a ON r.activity_id = a.id WHERE (
-    (EXTRACT (isodow FROM r.start_time::timestamp) <= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time::timestamp) >= EXTRACT (isodow FROM $1::timestamp)) 
+    (EXTRACT (isodow FROM r.start_time::timestamp) <= EXTRACT (isodow FROM $1::timestamp) AND EXTRACT (isodow FROM r.end_time::timestamp) >= EXTRACT (isodow FROM $1::timestamp::timestamp)) 
     OR
-    (EXTRACT (isodow FROM r.start_time::timestamp) <= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time::timestamp) <= EXTRACT (isodow FROM $1::timestamp) AND (EXTRACT (isodow FROM r.start_time::timestamp) > EXTRACT (isodow FROM r.end_time::timestamp)))
+    (EXTRACT (isodow FROM r.start_time::timestamp) <= EXTRACT (isodow FROM $1::timestamp) AND EXTRACT (isodow FROM r.end_time::timestamp) <= EXTRACT (isodow FROM $1::timestamp::timestamp) AND (EXTRACT (isodow FROM r.start_time::timestamp) > EXTRACT (isodow FROM r.end_time::timestamp)))
     OR
-    (EXTRACT (isodow FROM r.start_time::timestamp) >= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time::timestamp) >= EXTRACT (isodow FROM $1::timestamp) AND (EXTRACT (isodow FROM r.start_time::timestamp) > EXTRACT (isodow FROM r.end_time::timestamp)))
+    (EXTRACT (isodow FROM r.start_time::timestamp) >= EXTRACT (isodow FROM $1::timestamp) AND EXTRACT (isodow FROM r.end_time::timestamp) >= EXTRACT (isodow FROM $1::timestamp::timestamp) AND (EXTRACT (isodow FROM r.start_time::timestamp) > EXTRACT (isodow FROM r.end_time::timestamp)))
     )
     AND r.start_time < $1 + '1 day'::interval
     AND r.type = 'WEEKLY'
@@ -159,11 +159,11 @@ $func$
 BEGIN
     RETURN QUERY 
     SELECT a.name, r.start_time, r.end_time, r.type FROM recurrent_events AS r LEFT OUTER JOIN activities AS a ON r.activity_id = a.id WHERE (
-    (EXTRACT (day FROM r.start_time) <= EXTRACT (day FROM $1) AND EXTRACT (day FROM r.end_time) >= EXTRACT (day FROM $1)) 
+    (EXTRACT (day FROM r.start_time::timestamp) <= EXTRACT (day FROM $1::timestamp) AND EXTRACT (day FROM r.end_time::timestamp) >= EXTRACT (day FROM $1::timestamp)) 
     OR
-    (EXTRACT (day FROM r.start_time) <= EXTRACT (day FROM $1) AND EXTRACT (day FROM r.end_time) <= EXTRACT (day FROM $1) AND (EXTRACT (day FROM r.start_time) > EXTRACT (day FROM r.end_time)))
+    (EXTRACT (day FROM r.start_time::timestamp) <= EXTRACT (day FROM $1::timestamp) AND EXTRACT (day FROM r.end_time::timestamp) <= EXTRACT (day FROM $1::timestamp) AND (EXTRACT (day FROM r.start_time::timestamp) > EXTRACT (day FROM r.end_time::timestamp)))
     OR
-    (EXTRACT (day FROM r.start_time) >= EXTRACT (day FROM $1) AND EXTRACT (day FROM r.end_time) >= EXTRACT (day FROM $1) AND (EXTRACT (day FROM r.start_time) > EXTRACT (day FROM r.end_time)))
+    (EXTRACT (day FROM r.start_time::timestamp) >= EXTRACT (day FROM $1::timestamp) AND EXTRACT (day FROM r.end_time::timestamp) >= EXTRACT (day FROM $1::timestamp) AND (EXTRACT (day FROM r.start_time::timestamp) > EXTRACT (day FROM r.end_time::timestamp)))
     )
     AND r.start_time < $1 + '1 day'::interval
     AND r.type = 'MONTHLY'
@@ -179,13 +179,13 @@ CREATE OR REPLACE FUNCTION cmp_timestamptz_soe (timestamptz, timestamptz)
     RETURNS boolean AS
 $func$
 BEGIN
-    IF (SELECT EXTRACT (month FROM $1) < EXTRACT (month from $2))
+    IF (SELECT EXTRACT (month FROM $1::timestamp) < EXTRACT (month from $2::timestamp))
         THEN RETURN TRUE;
     END IF;
-    IF (SELECT EXTRACT (month FROM $1) > EXTRACT (month from $2))
+    IF (SELECT EXTRACT (month FROM $1::timestamp) > EXTRACT (month from $2::timestamp))
         THEN RETURN FALSE;
     END IF;
-    IF (SELECT EXTRACT (day FROM $1) <= EXTRACT (day from $2))
+    IF (SELECT EXTRACT (day FROM $1::timestamp) <= EXTRACT (day from $2::timestamp))
         THEN RETURN TRUE;
     END IF;
     RETURN FALSE;
@@ -200,13 +200,13 @@ CREATE OR REPLACE FUNCTION cmp_timestamptz_s (timestamptz, timestamptz)
     RETURNS boolean AS
 $func$
 BEGIN
-    IF (SELECT EXTRACT (month FROM $1) < EXTRACT (month from $2))
+    IF (SELECT EXTRACT (month FROM $1::timestamp) < EXTRACT (month from $2::timestamp))
         THEN RETURN TRUE;
     END IF;
-    IF (SELECT EXTRACT (month FROM $1) > EXTRACT (month from $2))
+    IF (SELECT EXTRACT (month FROM $1::timestamp) > EXTRACT (month from $2::timestamp))
         THEN RETURN FALSE;
     END IF;
-    IF (SELECT EXTRACT (day FROM $1) < EXTRACT (day from $2))
+    IF (SELECT EXTRACT (day FROM $1::timestamp) < EXTRACT (day from $2::timestamp))
         THEN RETURN TRUE;
     END IF;
     RETURN FALSE;
