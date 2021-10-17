@@ -24,13 +24,13 @@ FAV_PATH = args.path+"/fav"
 EVENT_PATH = args.path+"/event"
     
 def get_email():
-    creds = get_credentials()
-    params = {'credentials': creds}
+    token = get_token()
+    params = {'token': token}
     try:
         r = requests.get(EMAIL_PATH, params = params)
     except:
         error()
-    print(r.content.decode('UTF-8'))
+    print(r.json()['email'])
     
 def list_all():
     try:
@@ -42,14 +42,14 @@ def list_all():
     return r.json()
 
 def list_fav():
-    creds = get_credentials()
-    params = {'credentials': creds}
+    token = get_token()
+    params = {'token': token}
     try:
         r = requests.get(FAV_PATH, params = params)
     except:
         error()
-    if r.status_code == 400 and r.content.decode('UTF-8') == 'Wrong credentials.':
-        print("Your credentials are corrupt (expired or incorrect). Please log in with Google.")
+    if r.status_code == 400 and r.content.decode('UTF-8') == 'Wrong token.':
+        print("Your token are corrupt (expired or incorrect). Please log in with Google.")
         os.remove('token.json')
         return list_fav()
     for x in r.json():
@@ -58,9 +58,9 @@ def list_fav():
     
         
 def add_new_fav():
-    creds = get_credentials()
+    token = get_token()
     name = get_activity_name(list_all)
-    params = {'name' : name, 'credentials' : creds}
+    params = {'name' : name, 'token' : token}
     try:
         r = requests.put(FAV_PATH, params = params)
     except:
@@ -72,9 +72,9 @@ def add_new_fav():
         print(r.json())
     
 def del_fav():
-    creds = get_credentials()
+    token = get_token()
     name = get_activity_name(list_fav)
-    params = {'name' : name, 'credentials' : creds}
+    params = {'name' : name, 'token' : token}
     try:
         r = requests.delete(FAV_PATH, params = params)
     except:
@@ -86,15 +86,15 @@ def del_fav():
         print(r.json())
     
 def add_event():
-    creds = get_credentials()
+    token = get_token()
     print("Choose start date (yy/mm/dd hh:mm):")
     start_date = picker.pick_date()
     print("Choose end date (yy/mm/dd hh:mm):")
     end_date = picker.pick_date()
     recurrence = picker.pick_recurrence()
-    creds = get_credentials()
+    token = get_token()
     name = get_activity_name(list_fav)
-    params = {'credentials' : creds, 'name' : name, 'start_date' : start_date, 'end_date' : end_date}
+    params = {'token' : token, 'name' : name, 'start_date' : start_date, 'end_date' : end_date}
     if recurrence:
         params['recurrence'] = recurrence
     try:
@@ -104,14 +104,17 @@ def add_event():
     print(r.json())
 
 def list_events():
-    creds = get_credentials()
+    token = get_token()
     print("Choose start date (yy/mm/dd):")
     date = picker.pick_date(hours_minutes = False)
-    params = {'credentials' : creds, 'date' : date}
+    params = {'token' : token, 'date' : date}
     try:
         r = requests.get(EVENT_PATH, params = params)
     except:
         error()
+    if r.status_code != 200:
+        print(r.json())
+        return
     for x in r.json()['activities']:
         event = event_from_list(x)
         actual_start_dates, actual_end_dates = calculate_start_end(date, event['start_date'], event['end_date'], event['recurrence'])
@@ -126,7 +129,7 @@ def obtain_token():
         error()
     if r.status_code != 200:
         error()
-    print("Paste the credentials here:")
+    print("Paste the token here:")
     access_url = r.json()['url']
     webbrowser.open(access_url)
     with open('token.json', 'w') as token_file:
@@ -144,12 +147,12 @@ def check_token():
     else:
         with open('token.json',) as f:
             try:
-                creds = json.dumps(json.load(f))
+                token = json.dumps(json.load(f))
             except:
                 print("Invalid token. Please log into the app with Google.")
                 obtain_token()
                 return
-            params = {'credentials' : creds}
+            params = {'token' : token}
             try:
                 r = requests.get(EMAIL_PATH, params = params)
             except:
@@ -159,7 +162,7 @@ def check_token():
                 print("Invalid token. Please log into the app with Google.")
                 obtain_token()
         
-def get_credentials():
+def get_token():
     check_token()
     with open('token.json',) as f:
         data = json.load(f)

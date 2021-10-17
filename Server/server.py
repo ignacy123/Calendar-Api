@@ -12,11 +12,6 @@ import google.oauth2.credentials
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
-try:
-    db.start_db()
-except:
-    print("Could not start db. Aborting")
-    sys.exit(-1)
 
 @app.route('/lall', methods=['GET'])
 def list_all():
@@ -28,15 +23,17 @@ def list_all():
         
 @app.route('/fav', methods=['GET', 'PUT', 'DELETE'])
 def fav():
-    if 'credentials' not in request.args:
+    if 'token' not in request.args:
         message = 'Please provide a Google Authentication token.'
         return jsonify({'message': message}), 400
     if 'name' not in request.args and (flask.request.method == 'PUT' or flask.request.method == 'DELETE'):
         message = 'Please provide a name.'
         return jsonify({'message': message}), 400
-        
+    
+    creds_json = gs.token_to_creds_json(json.loads(request.args['token']))
+    
     try:
-        email = gs.get_email_from_json_credentials(json.loads(request.args['credentials']))
+        email = gs.get_email_from_json_credentials(creds_json)
     except:
         message = 'Wrong credentials.'
         return jsonify({'message': message}), 400
@@ -74,7 +71,7 @@ def fav():
     
 @app.route('/event', methods=['PUT', 'GET'])
 def event():
-    if 'credentials' not in request.args:
+    if 'token' not in request.args:
         message = 'Please provide a Google Authentication token.'
         return jsonify({'message': message}), 400
     if 'start_date' not in request.args and request.method == 'PUT':
@@ -90,10 +87,10 @@ def event():
         message = 'Please specify an activity.'
         return jsonify({'message': message}), 400
     
-    json_creds = json.loads(request.args['credentials'])
+    creds_json = gs.token_to_creds_json(json.loads(request.args['token']))
     
     try:
-        email = gs.get_email_from_json_credentials(json_creds)
+        email = gs.get_email_from_json_credentials(creds_json)
     except:
         message = 'Wrong credentials.'
         return jsonify({'message': message}), 400
@@ -130,7 +127,7 @@ def event():
             message = 'Database error.'
             return jsonify({'message': message}), 400
         try:
-            gs.add_event_to_google_calendar(json_creds, start_date, end_date, name, recurrence)
+            gs.add_event_to_google_calendar(creds_json, start_date, end_date, name, recurrence)
         except:
             message = 'Saved to database but failed to upload to Google.'
             return jsonify({'message': message}), 400
@@ -152,11 +149,12 @@ def event():
     
 @app.route('/email', methods=['GET'])
 def email():
-    if 'credentials' not in request.args:
+    if 'token' not in request.args:
         message = 'Please provide a Google Authentication token.'
         return jsonify({'message': message}), 400
     try:
-        email = gs.get_email_from_json_credentials(json.loads(request.args['credentials']))
+        creds_json = gs.token_to_creds_json(json.loads(request.args['token']))
+        email = gs.get_email_from_json_credentials(creds_json)
         return jsonify({'email' : email})
     except:
         message = 'Wrong credentials.'
@@ -170,18 +168,20 @@ def access():
 
 @app.route('/oauth2callback')
 def callback():
-    try:
-        creds_json = gs.code_to_creds_json(request.args['state'], request.args['code'])
-        return creds_json, 200
-    except:
-        message = 'Google error. Most likely not all permissions were granted.'
-        return jsonify({'message': message}), 400
+    creds_json = gs.code_to_creds_json(request.args['state'], request.args['code'])
+    token_json = {'token' : creds_json['token'], 'refresh_token' : creds_json['refresh_token']}
+    return token_json, 200
 
 def handle_bad_request(e):
     message = 'Bad request!'
     return jsonify({'message': message}), 400
 
 def main():
+    try:
+        db.start_db()
+    except:
+        print("Could not start db. Aborting")
+        sys.exit(-1)
     app.register_error_handler(400, handle_bad_request)
     app.run()
 

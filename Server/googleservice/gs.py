@@ -28,8 +28,17 @@ def code_to_creds_json(state, code):
         scopes=SCOPES)
     flow.redirect_uri = 'http://localhost:5000/oauth2callback'
     flow.fetch_token(code = code)
-    return flow.credentials.to_json()
+    return json.loads(flow.credentials.to_json())
 
+#assumes there's 'token' and 'refresh_token' in the dict
+def token_to_creds_json(token_dict):
+    if 'token' not in token_dict.keys() or 'refresh_token' not in token_dict.keys():
+        raise InvalidTokenException("Missing token or refresh_token.")
+    secret_data = pkgutil.get_data(__package__, 'client_secret.json').decode()
+    secret_dict = json.loads(secret_data)['web']
+    creds_json = {'token' : token_dict['token'], 'refresh_token' : token_dict['refresh_token'], 'token_uri' : secret_dict['token_uri'], 'client_id' : secret_dict['client_id'], 'client_secret' : secret_dict['client_secret'], 'scopes' : SCOPES}
+    return creds_json
+    
 def get_email_from_json_credentials(json_creds):
     creds = Credentials.from_authorized_user_info(json_creds, SCOPES)
     service = build('oauth2', 'v2', credentials=creds)
@@ -46,3 +55,6 @@ def add_event_to_google_calendar(json_creds, start_time, end_time, name, recurre
     else:
         body = {"summary" : name, "start" : {"dateTime": start_time.isoformat()}, "end" : {"dateTime": end_time.isoformat()}}
     service.events().insert(calendarId = "primary", body = body).execute()
+    
+class InvalidTokenException(Exception):
+    """Invalid token has been sent in the args."""
