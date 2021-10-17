@@ -1,6 +1,7 @@
 #!/bin/python3
 import flask 
 from flask import request, jsonify
+import sys
 import json
 import datetime
 import dateutil.parser
@@ -11,12 +12,20 @@ import google.oauth2.credentials
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
-db.start_db()
+try:
+    db.start_db()
+except:
+    print("Could not start db. Aborting")
+    sys.exit(-1)
 
 @app.route('/lall', methods=['GET'])
 def list_all():
-    return jsonify(db.all_activities())
-
+    try:
+        return jsonify(db.all_activities())
+    except:
+        message = 'Database error.'
+        return jsonify({'message': message}), 400
+        
 @app.route('/fav', methods=['GET', 'PUT', 'DELETE'])
 def fav():
     if 'credentials' not in request.args:
@@ -34,8 +43,7 @@ def fav():
     
     if request.method == 'GET':
         try:
-            fav_activities = db.fav_activities(email)
-            return jsonify(fav_activities)
+            return jsonify(db.fav_activities(email))
         except:
             message = 'Database error.'
             return jsonify({'message': message}), 400
@@ -102,7 +110,12 @@ def event():
         if start_date >= end_date:
             message = 'Event ends before it starts.'
             return jsonify({'message': message}), 400
-        if name not in [y for x, y in db.fav_activities(email)]:
+        try:
+            fav_activities = db.fav_activities(email)
+        except:
+            message = 'Database error.'
+            return jsonify({'message': message}), 400
+        if name not in [y for x, y in fav_activities]:
             message = 'Activity has to be a favourite.'
             return jsonify({'message': message}), 400
         try:
@@ -119,8 +132,12 @@ def event():
     
     if request.method == 'GET':
         date = dateutil.parser.isoparse(request.args['date'])
-        res = {'activities' : db.get_activities(date, email)}
-        return jsonify(res)
+        try:
+            res = {'activities' : db.get_activities(date, email)}
+            return jsonify(res)
+        except:
+            message = 'Database error.'
+            return jsonify({'message': message}), 400
         
     
 @app.route('/email', methods=['GET'])
