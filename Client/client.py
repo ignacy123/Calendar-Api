@@ -8,6 +8,7 @@ import json
 import dateutil.tz
 import dateutil.parser
 import time
+import picker
 from datetime import timedelta
 from datetime import datetime
 
@@ -21,7 +22,6 @@ EMAIL_PATH = args.path+"/email"
 LIST_ALL_PATH = args.path+"/lall"
 FAV_PATH = args.path+"/fav"
 EVENT_PATH = args.path+"/event"
-rec_dict = {'n' : None, 'd' : "DAILY", 'w' : "WEEKLY", 'm' : "MONTHLY", 'y' : "YEARLY"}
     
 def get_email():
     creds = get_credentials()
@@ -88,10 +88,10 @@ def del_fav():
 def add_event():
     creds = get_credentials()
     print("Choose start date (yy/mm/dd hh:mm):")
-    start_date = pick_date()
+    start_date = picker.pick_date()
     print("Choose end date (yy/mm/dd hh:mm):")
-    end_date = pick_date()
-    recurrence = pick_recurrence()
+    end_date = picker.pick_date()
+    recurrence = picker.pick_recurrence()
     creds = get_credentials()
     name = get_activity_name(list_fav)
     params = {'credentials' : creds, 'name' : name, 'start_date' : start_date, 'end_date' : end_date}
@@ -106,7 +106,7 @@ def add_event():
 def list_events():
     creds = get_credentials()
     print("Choose start date (yy/mm/dd):")
-    date = pick_date(hours_minutes = False)
+    date = picker.pick_date(hours_minutes = False)
     params = {'credentials' : creds, 'date' : date}
     try:
         r = requests.get(EVENT_PATH, params = params)
@@ -126,6 +126,7 @@ def obtain_token():
         error()
     if r.status_code != 200:
         error()
+    print("Paste the credentials here:")
     access_url = r.json()['url']
     webbrowser.open(access_url)
     with open('token.json', 'w') as token_file:
@@ -138,36 +139,31 @@ def obtain_token():
 def check_token():
     if not os.path.exists('token.json'):
         print("Currently you are not logged in. Please log into the app with Google.")
-        print("Paste the credentials here:")
         obtain_token()
+        return
+    else:
+        with open('token.json',) as f:
+            try:
+                creds = json.dumps(json.load(f))
+            except:
+                print("Invalid token. Please log into the app with Google.")
+                obtain_token()
+                return
+            params = {'credentials' : creds}
+            try:
+                r = requests.get(EMAIL_PATH, params = params)
+            except:
+                error()
+            if r.status_code == 400:
+                os.remove('token.json')
+                print("Invalid token. Please log into the app with Google.")
+                obtain_token()
         
 def get_credentials():
     check_token()
     with open('token.json',) as f:
         data = json.load(f)
         return json.dumps(data)
-    
-def pick_date(hours_minutes = True):
-    pattern = '%y/%m/%d %H:%M'
-    if not hours_minutes:
-        pattern = '%y/%m/%d'
-    while(True):
-        line = input()
-        try:
-            date = datetime.strptime(line, pattern)
-            date = date.replace(tzinfo = dateutil.tz.tzoffset(None, time.localtime().tm_gmtoff))
-            return date
-        except:
-            print("Sorry, but this isn't quite right. Try again.")
-            
-def pick_recurrence():
-    while True:
-        print("Recurrent?\n n - No \n d - Daily \n w - weekly \n m - monthly \n y - yearly")
-        line = input()
-        if line in ['n', 'd', 'w', 'm', 'y']:
-            rec = rec_dict[line]
-            return rec
-        print("Sorry, try again.")
 
 def get_activity_name(f):
     print("Choose activity (number):")
