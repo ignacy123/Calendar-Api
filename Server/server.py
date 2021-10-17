@@ -20,47 +20,78 @@ def list_all():
 @app.route('/fav', methods=['GET', 'PUT', 'DELETE'])
 def fav():
     if 'credentials' not in request.args:
-        return "Please provide a Google Authentication token.", 400
+        message = 'Please provide a Google Authentication token.'
+        return jsonify({'message': message}), 400
     if 'name' not in request.args and (flask.request.method == 'PUT' or flask.request.method == 'DELETE'):
-        return "Please provide a name.", 400
-    
+        message = 'Please provide a name.'
+        return jsonify({'message': message}), 400
+        
     try:
         email = gs.get_email_from_json_credentials(json.loads(request.args['credentials']))
     except:
-        return 'Wrong credentials.', 400
+        message = 'Wrong credentials.'
+        return jsonify({'message': message}), 400
     
     if request.method == 'GET':
-        return jsonify(db.fav_activities(email))
+        try:
+            fav_activities = db.fav_activities(email)
+            return jsonify(fav_activities)
+        except:
+            message = 'Database error.'
+            return jsonify({'message': message}), 400
+        
     if request.method == 'PUT':
         name = request.args['name']
-        db.new_fav(email, name)
-        return jsonify([name]), 200
+        try:
+            db.new_fav(email, name)
+            return jsonify([name]), 200
+        except NoSuchActivityException:
+            message = 'Such activity does not exist.'
+            return jsonify({'message': message}), 400
+        except:
+            message = 'Database error.'
+            return jsonify({'message': message}), 400
+            
     if request.method == 'DELETE':
         name = request.args['name']
-        db.delete_fav(email, name)
-        return jsonify([name]), 200
+        try:
+            db.delete_fav(email, name)
+            return jsonify([name]), 200
+        except db.NoSuchActivityException as e:
+            message = 'Such activity does not exist.'
+            return jsonify({'message': message}), 400
+        except:
+            message = 'Database error.'
+            return jsonify({'message': message}), 400
     
 @app.route('/event', methods=['PUT', 'GET'])
 def event():
     if 'credentials' not in request.args:
-        return "Please provide a Google Authentication token.", 400
+        message = 'Please provide a Google Authentication token.'
+        return jsonify({'message': message}), 400
     if 'start_date' not in request.args and request.method == 'PUT':
-        return "Please choose a start_date.", 400
+        message = 'Please choose a start_date.'
+        return jsonify({'message': message}), 400
     if 'end_date' not in request.args and request.method == 'PUT':
-        return "Please choose an end_date.", 400
+        message = 'Please choose an end_date.'
+        return jsonify({'message': message}), 400
     if 'date' not in request.args and request.method == 'GET':
-        return "Please choose a date.", 400
+        message = 'Please choose a date.'
+        return jsonify({'message': message}), 400
     if 'name' not in request.args and request.method == 'PUT':
-        return "Please specify an activity.", 400
+        message = 'Please specify an activity.'
+        return jsonify({'message': message}), 400
     
     try:
         email = gs.get_email_from_json_credentials(json.loads(request.args['credentials']))
     except:
-        return 'Wrong credentials.', 400
+        message = 'Wrong credentials.'
+        return jsonify({'message': message}), 400
     
     if request.method == 'PUT':
         if 'recurrence' in request.args and request.args['recurrence'] not in ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']:
-            return "Unknown recurrence", 400
+            message = 'Unknown recurrence.'
+            return jsonify({'message': message}), 400
         recurrence = None
         if 'recurrence' in request.args:
             recurrence = request.args['recurrence']
@@ -69,17 +100,21 @@ def event():
         end_date = dateutil.parser.isoparse(request.args['end_date'])
         name = request.args['name']
         if start_date >= end_date:
-            return 'Events ends before it starts', 400
+            message = 'Event ends before it starts.'
+            return jsonify({'message': message}), 400
         if name not in [y for x, y in db.fav_activities(email)]:
-            return 'Activity has to be a favourite', 400
+            message = 'Activity has to be a favourite.'
+            return jsonify({'message': message}), 400
         try:
             db.add_event(email, start_date, end_date, name, recurrence)
         except:
-            return 'Database error.', 400
+            message = 'Database error.'
+            return jsonify({'message': message}), 400
         try:
             gs.add_event_to_google_calendar(json_creds, start_date, end_date, name, recurrence)
         except:
-            return 'Saved to database but failed to upload to Google.', 400
+            message = 'Saved to database but failed to upload to Google.'
+            return jsonify({'message': message}), 400
         return jsonify(request.args['name']), 200
     
     if request.method == 'GET':
@@ -91,11 +126,13 @@ def event():
 @app.route('/email', methods=['GET'])
 def email():
     if 'credentials' not in request.args:
-        return "Please provide a Google Authentication token.", 400
+        message = 'Please provide a Google Authentication token.'
+        return jsonify({'message': message}), 400
     try:
         email = gs.get_email_from_json_credentials(json.loads(request.args['credentials']))
     except:
-        return 'Wrong credentials.', 400
+        message = 'Wrong credentials.'
+        return jsonify({'message': message}), 400
     return email
     
 #Google OAuth2 related
@@ -110,7 +147,8 @@ def callback():
     return creds_json, 200
 
 def handle_bad_request(e):
-    return 'Bad request!', 400
+        message = 'Bad request!'
+        return jsonify({'message': message}), 400
 
 def main():
     app.register_error_handler(400, handle_bad_request)

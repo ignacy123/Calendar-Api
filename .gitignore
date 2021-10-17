@@ -4,6 +4,7 @@ Server/flask
 Server/__pycache__/*
 Google/*
 Client/token.json
+Client/http_client.py
 Server/googleservice/client_secret.json
 Server/googleservice/__pycache__/*
 Server/database/__pycache__/*

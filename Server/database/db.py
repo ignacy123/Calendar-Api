@@ -51,8 +51,6 @@ def get_activity_id(name):
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM activities WHERE name = %s", (name, ))
             if cur.rowcount == 0:
-                cur.close()
-                conn.close()
                 raise NoSuchActivityException("Getting id of a non-existent activity")
             id = cur.fetchone()[0]
             return id
