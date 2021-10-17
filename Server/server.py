@@ -170,8 +170,12 @@ def access():
 
 @app.route('/oauth2callback')
 def callback():
-    creds_json = gs.code_to_creds_json(request.args['state'], request.args['code'])
-    return creds_json, 200
+    try:
+        creds_json = gs.code_to_creds_json(request.args['state'], request.args['code'])
+        return creds_json, 200
+    except:
+        message = 'Google error. Most likely not all permissions were granted.'
+        return jsonify({'message': message}), 400
 
 def handle_bad_request(e):
     message = 'Bad request!'
