@@ -67,8 +67,9 @@ def add_new_fav():
         error()
     if r.status_code == 200:
         print("Successfully added.")
+        print(r.json())
     else:
-        print("Something went wrong, try again.")
+        print(r.json())
     
 def del_fav():
     creds = get_credentials()
@@ -80,8 +81,9 @@ def del_fav():
         error()
     if r.status_code == 200:
         print("Successfully deleted.")
+        print(r.json())
     else: 
-        print("Something went wrong, try again.")
+        print(r.json())
     
 def add_event():
     creds = get_credentials()

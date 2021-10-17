@@ -52,7 +52,7 @@ def fav():
         name = request.args['name']
         try:
             db.new_fav(email, name)
-            return jsonify([name]), 200
+            return jsonify({'name' : name}), 200
         except db.NoSuchActivityException:
             message = 'Such activity does not exist.'
             return jsonify({'message': message}), 400
@@ -64,7 +64,7 @@ def fav():
         name = request.args['name']
         try:
             db.delete_fav(email, name)
-            return jsonify([name]), 200
+            return jsonify({'name' : name}), 200
         except db.NoSuchActivityException as e:
             message = 'Such activity does not exist.'
             return jsonify({'message': message}), 400
@@ -134,7 +134,7 @@ def event():
         except:
             message = 'Saved to database but failed to upload to Google.'
             return jsonify({'message': message}), 400
-        return jsonify(request.args['name']), 200
+        return jsonify({'name' : name, 'start_date' : start_date, 'end_date' : end_date, 'recurrence' : recurrence}), 200
     
     if request.method == 'GET':
         try:
@@ -157,10 +157,10 @@ def email():
         return jsonify({'message': message}), 400
     try:
         email = gs.get_email_from_json_credentials(json.loads(request.args['credentials']))
+        return jsonify({'email' : email})
     except:
         message = 'Wrong credentials.'
         return jsonify({'message': message}), 400
-    return email
     
 #Google OAuth2 related
 @app.route('/access')
@@ -174,8 +174,8 @@ def callback():
     return creds_json, 200
 
 def handle_bad_request(e):
-        message = 'Bad request!'
-        return jsonify({'message': message}), 400
+    message = 'Bad request!'
+    return jsonify({'message': message}), 400
 
 def main():
     app.register_error_handler(400, handle_bad_request)
