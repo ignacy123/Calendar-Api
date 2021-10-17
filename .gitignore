@@ -7,3 +7,4 @@ Client/token.json
 Server/googleservice/client_secret.json
 Server/googleservice/__pycache__/*
 Server/database/__pycache__/*
+Server/database/database.ini
