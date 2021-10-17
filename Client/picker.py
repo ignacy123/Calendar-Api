@@ -14,7 +14,6 @@ def pick_date(hours_minutes = True):
         line = input()
         try:
             date = datetime.strptime(line, pattern)
-            date = date.replace(tzinfo = dateutil.tz.tzoffset(None, time.localtime().tm_gmtoff))
             return date
         except:
             print("Sorry, but this isn't quite right. Try again.")

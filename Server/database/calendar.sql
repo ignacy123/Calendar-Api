@@ -29,8 +29,8 @@ CREATE TABLE single_events (
     id                          serial NOT NULL,
     email_id                    integer NOT NULL,
     activity_id                 integer NOT NULL,
-    start_time                  timestamptz NOT NULL,
-    end_time                    timestamptz NOT NULL,
+    start_time                  timestamp NOT NULL,
+    end_time                    timestamp NOT NULL,
     CONSTRAINT single_event_id PRIMARY KEY (id),
     CONSTRAINT fk_single_events_email FOREIGN KEY (email_id) REFERENCES email(id),
     CONSTRAINT fk_single_events_activities FOREIGN KEY (activity_id) REFERENCES activities(id),
@@ -64,8 +64,8 @@ FOR EACH ROW EXECUTE PROCEDURE single_event_check();
 
 DROP FUNCTION IF EXISTS get_single_activities CASCADE;
 
-CREATE OR REPLACE FUNCTION get_single_activities(timestamptz, integer)
-    RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz) AS
+CREATE OR REPLACE FUNCTION get_single_activities(timestamp, integer)
+    RETURNS TABLE (name varchar(40), start_time timestamp, end_time timestamp) AS
 $func$
 BEGIN
     RETURN QUERY 
@@ -82,8 +82,8 @@ CREATE TABLE recurrent_events (
     id                      serial NOT NULL,
     email_id                integer NOT NULL,
     activity_id             integer NOT NULL,
-    start_time              timestamptz NOT NULL,
-    end_time                timestamptz NOT NULL,
+    start_time              timestamp NOT NULL,
+    end_time                timestamp NOT NULL,
     type                    varchar(10),
     CONSTRAINT recurrent_event_id PRIMARY KEY (id),
     CONSTRAINT fk_recurrent_events_email FOREIGN KEY (email_id) REFERENCES email(id),
@@ -121,10 +121,10 @@ FOR EACH ROW EXECUTE PROCEDURE recurrent_event_check();
 CREATE OR REPLACE FUNCTION recurrent_monthly_check() RETURNS TRIGGER AS $recurrent_monthly_check$
 DECLARE
 BEGIN
-IF NEW.type = 'MONTHLY' AND EXTRACT (day FROM NEW.start_time::timestamp) > 28
+IF NEW.type = 'MONTHLY' AND EXTRACT (day FROM NEW.start_time) > 28
     THEN RAISE EXCEPTION 'Monthly activity cannot start on a day with number greater than 28.';
 END IF;
-IF NEW.type = 'MONTHLY' AND EXTRACT (day FROM NEW.end_time::timestamp) > 28
+IF NEW.type = 'MONTHLY' AND EXTRACT (day FROM NEW.end_time) > 28
     THEN RAISE EXCEPTION 'Monthly activity cannot end on a day with number greater than 28.';
 END IF;
 RETURN NEW;
@@ -134,11 +134,11 @@ CREATE TRIGGER recurrent_monthly_check BEFORE INSERT OR UPDATE ON recurrent_even
 FOR EACH ROW EXECUTE PROCEDURE recurrent_monthly_check();
 
 
---get daily events that will occur on given timestamptz
+--get daily events that will occur on given timestamp
 DROP FUNCTION IF EXISTS get_dailies CASCADE;
 
-CREATE OR REPLACE FUNCTION get_dailies(timestamptz, integer) 
-    RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz, type varchar(10)) AS
+CREATE OR REPLACE FUNCTION get_dailies(timestamp, integer) 
+    RETURNS TABLE (name varchar(40), start_time timestamp, end_time timestamp, type varchar(10)) AS
 $func$
 BEGIN
     RETURN QUERY 
@@ -149,20 +149,20 @@ BEGIN
 END
 $func$ LANGUAGE plpgsql;
 
---get weekly events that will occur on given timestamptz
+--get weekly events that will occur on given timestamp
 DROP FUNCTION IF EXISTS get_weeklies CASCADE;
 
-CREATE OR REPLACE FUNCTION get_weeklies(timestamptz, integer) 
-    RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz, type varchar(10)) AS
+CREATE OR REPLACE FUNCTION get_weeklies(timestamp, integer) 
+    RETURNS TABLE (name varchar(40), start_time timestamp, end_time timestamp, type varchar(10)) AS
 $func$
 BEGIN
     RETURN QUERY 
     SELECT a.name, r.start_time, r.end_time, r.type FROM recurrent_events AS r LEFT OUTER JOIN activities AS a ON r.activity_id = a.id WHERE (
-    (EXTRACT (isodow FROM r.start_time::timestamp) <= EXTRACT (isodow FROM $1::timestamp) AND EXTRACT (isodow FROM r.end_time::timestamp) >= EXTRACT (isodow FROM $1::timestamp::timestamp)) 
+    (EXTRACT (isodow FROM r.start_time) <= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) >= EXTRACT (isodow FROM $1)) 
     OR
-    (EXTRACT (isodow FROM r.start_time::timestamp) <= EXTRACT (isodow FROM $1::timestamp) AND EXTRACT (isodow FROM r.end_time::timestamp) <= EXTRACT (isodow FROM $1::timestamp::timestamp) AND (EXTRACT (isodow FROM r.start_time::timestamp) > EXTRACT (isodow FROM r.end_time::timestamp)))
+    (EXTRACT (isodow FROM r.start_time) <= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) <= EXTRACT (isodow FROM $1) AND (EXTRACT (isodow FROM r.start_time) > EXTRACT (isodow FROM r.end_time)))
     OR
-    (EXTRACT (isodow FROM r.start_time::timestamp) >= EXTRACT (isodow FROM $1::timestamp) AND EXTRACT (isodow FROM r.end_time::timestamp) >= EXTRACT (isodow FROM $1::timestamp::timestamp) AND (EXTRACT (isodow FROM r.start_time::timestamp) > EXTRACT (isodow FROM r.end_time::timestamp)))
+    (EXTRACT (isodow FROM r.start_time) >= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) >= EXTRACT (isodow FROM $1) AND (EXTRACT (isodow FROM r.start_time) > EXTRACT (isodow FROM r.end_time)))
     )
     AND r.start_time < $1 + '1 day'::interval
     AND r.type = 'WEEKLY'
@@ -170,20 +170,20 @@ BEGIN
 END
 $func$ LANGUAGE plpgsql;
 
---get monthly events that will occur on given timestamptz
+--get monthly events that will occur on given timestamp
 DROP FUNCTION IF EXISTS get_monthlies CASCADE;
 
-CREATE OR REPLACE FUNCTION get_monthlies(timestamptz, integer) 
-    RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz, type varchar(10)) AS
+CREATE OR REPLACE FUNCTION get_monthlies(timestamp, integer) 
+    RETURNS TABLE (name varchar(40), start_time timestamp, end_time timestamp, type varchar(10)) AS
 $func$
 BEGIN
     RETURN QUERY 
     SELECT a.name, r.start_time, r.end_time, r.type FROM recurrent_events AS r LEFT OUTER JOIN activities AS a ON r.activity_id = a.id WHERE (
-    (EXTRACT (day FROM r.start_time::timestamp) <= EXTRACT (day FROM $1::timestamp) AND EXTRACT (day FROM r.end_time::timestamp) >= EXTRACT (day FROM $1::timestamp)) 
+    (EXTRACT (day FROM r.start_time) <= EXTRACT (day FROM $1) AND EXTRACT (day FROM r.end_time) >= EXTRACT (day FROM $1)) 
     OR
-    (EXTRACT (day FROM r.start_time::timestamp) <= EXTRACT (day FROM $1::timestamp) AND EXTRACT (day FROM r.end_time::timestamp) <= EXTRACT (day FROM $1::timestamp) AND (EXTRACT (day FROM r.start_time::timestamp) > EXTRACT (day FROM r.end_time::timestamp)))
+    (EXTRACT (day FROM r.start_time) <= EXTRACT (day FROM $1) AND EXTRACT (day FROM r.end_time) <= EXTRACT (day FROM $1) AND (EXTRACT (day FROM r.start_time) > EXTRACT (day FROM r.end_time)))
     OR
-    (EXTRACT (day FROM r.start_time::timestamp) >= EXTRACT (day FROM $1::timestamp) AND EXTRACT (day FROM r.end_time::timestamp) >= EXTRACT (day FROM $1::timestamp) AND (EXTRACT (day FROM r.start_time::timestamp) > EXTRACT (day FROM r.end_time::timestamp)))
+    (EXTRACT (day FROM r.start_time) >= EXTRACT (day FROM $1) AND EXTRACT (day FROM r.end_time) >= EXTRACT (day FROM $1) AND (EXTRACT (day FROM r.start_time) > EXTRACT (day FROM r.end_time)))
     )
     AND r.start_time < $1 + '1 day'::interval
     AND r.type = 'MONTHLY'
@@ -191,62 +191,62 @@ BEGIN
 END
 $func$ LANGUAGE plpgsql;
 
--- returns timestamptz1 <= timestamptz2 ignoring the year and anything after the day (MM1-DD1 <= MM2-DD2)
+-- returns timestamp1 <= timestamp2 ignoring the year and anything after the day (MM1-DD1 <= MM2-DD2)
 
-DROP FUNCTION IF EXISTS cmp_timestamptz_soe CASCADE;
+DROP FUNCTION IF EXISTS cmp_timestamp_soe CASCADE;
 
-CREATE OR REPLACE FUNCTION cmp_timestamptz_soe (timestamptz, timestamptz) 
+CREATE OR REPLACE FUNCTION cmp_timestamp_soe (timestamp, timestamp) 
     RETURNS boolean AS
 $func$
 BEGIN
-    IF (SELECT EXTRACT (month FROM $1::timestamp) < EXTRACT (month from $2::timestamp))
+    IF (SELECT EXTRACT (month FROM $1) < EXTRACT (month from $2))
         THEN RETURN TRUE;
     END IF;
-    IF (SELECT EXTRACT (month FROM $1::timestamp) > EXTRACT (month from $2::timestamp))
+    IF (SELECT EXTRACT (month FROM $1) > EXTRACT (month from $2))
         THEN RETURN FALSE;
     END IF;
-    IF (SELECT EXTRACT (day FROM $1::timestamp) <= EXTRACT (day from $2::timestamp))
+    IF (SELECT EXTRACT (day FROM $1) <= EXTRACT (day from $2))
         THEN RETURN TRUE;
     END IF;
     RETURN FALSE;
 END
 $func$ LANGUAGE plpgsql;
 
--- returns timestamptz1 < timestamptz2 ignoring the year and anything after the day (MM1-DD1 < MM2-DD2)
+-- returns timestamp1 < timestamp2 ignoring the year and anything after the day (MM1-DD1 < MM2-DD2)
 
-DROP FUNCTION IF EXISTS cmp_timestamptz_s CASCADE;
+DROP FUNCTION IF EXISTS cmp_timestamp_s CASCADE;
 
-CREATE OR REPLACE FUNCTION cmp_timestamptz_s (timestamptz, timestamptz) 
+CREATE OR REPLACE FUNCTION cmp_timestamp_s (timestamp, timestamp) 
     RETURNS boolean AS
 $func$
 BEGIN
-    IF (SELECT EXTRACT (month FROM $1::timestamp) < EXTRACT (month from $2::timestamp))
+    IF (SELECT EXTRACT (month FROM $1) < EXTRACT (month from $2))
         THEN RETURN TRUE;
     END IF;
-    IF (SELECT EXTRACT (month FROM $1::timestamp) > EXTRACT (month from $2::timestamp))
+    IF (SELECT EXTRACT (month FROM $1) > EXTRACT (month from $2))
         THEN RETURN FALSE;
     END IF;
-    IF (SELECT EXTRACT (day FROM $1::timestamp) < EXTRACT (day from $2::timestamp))
+    IF (SELECT EXTRACT (day FROM $1) < EXTRACT (day from $2))
         THEN RETURN TRUE;
     END IF;
     RETURN FALSE;
 END
 $func$ LANGUAGE plpgsql;
 
---get yearly events that will occur on given timestamptz
+--get yearly events that will occur on given timestamp
 DROP FUNCTION IF EXISTS get_yearlies CASCADE;
 
-CREATE OR REPLACE FUNCTION get_yearlies(timestamptz, integer) 
-    RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz, type varchar(10)) AS
+CREATE OR REPLACE FUNCTION get_yearlies(timestamp, integer) 
+    RETURNS TABLE (name varchar(40), start_time timestamp, end_time timestamp, type varchar(10)) AS
 $func$
 BEGIN
     RETURN QUERY 
     SELECT a.name, r.start_time, r.end_time, r.type FROM recurrent_events AS r LEFT OUTER JOIN activities AS a ON r.activity_id = a.id WHERE (
-    (SELECT cmp_timestamptz_soe(r.start_time, $1) AND (SELECT cmp_timestamptz_soe($1, r.end_time))) 
+    (SELECT cmp_timestamp_soe(r.start_time, $1) AND (SELECT cmp_timestamp_soe($1, r.end_time))) 
     OR
-    (SELECT cmp_timestamptz_soe(r.start_time, $1) AND (SELECT cmp_timestamptz_soe(r.end_time, $1)) AND (SELECT cmp_timestamptz_s(r.end_time, r.start_time)))
+    (SELECT cmp_timestamp_soe(r.start_time, $1) AND (SELECT cmp_timestamp_soe(r.end_time, $1)) AND (SELECT cmp_timestamp_s(r.end_time, r.start_time)))
     OR
-    (SELECT cmp_timestamptz_soe($1, r.start_time) AND (SELECT cmp_timestamptz_soe($1, r.end_time)) AND (SELECT cmp_timestamptz_s(r.end_time, r.start_time)))
+    (SELECT cmp_timestamp_soe($1, r.start_time) AND (SELECT cmp_timestamp_soe($1, r.end_time)) AND (SELECT cmp_timestamp_s(r.end_time, r.start_time)))
     )
     AND r.start_time < $1 + '1 day'::interval
     AND r.type = 'YEARLY'
@@ -256,8 +256,8 @@ $func$ LANGUAGE plpgsql;
 
 DROP FUNCTION IF EXISTS get_activities CASCADE;
 
-CREATE OR REPLACE FUNCTION get_activities(timestamptz, integer) 
-    RETURNS TABLE (name varchar(40), start_time timestamptz, end_time timestamptz, type varchar(10)) AS
+CREATE OR REPLACE FUNCTION get_activities(timestamp, integer) 
+    RETURNS TABLE (name varchar(40), start_time timestamp, end_time timestamp, type varchar(10)) AS
 $func$
 BEGIN
     RETURN QUERY 
@@ -320,7 +320,7 @@ INSERT INTO recurrent_events (email_id, activity_id, start_time, end_time, type)
 (1, 7, '2021-10-06 15:00:00', '2021-10-06 17:00:00', 'WEEKLY'),
 (1, 9, '2021-10-13 15:00:00', '2021-10-13 17:00:00', 'WEEKLY'),
 (1, 10, '2021-10-20 15:00:00', '2021-10-20 17:00:00', 'WEEKLY'),
-(1, 7, '2021-10-16 10:00:00+02','2021-10-23 09:59:00+02', 'WEEKLY'),
+(1, 7, '2021-10-16 10:00:00','2021-10-23 09:59:00', 'WEEKLY'),
 (1, 8, '2021-10-14 14:00:00', '2021-10-14 15:00:00', 'MONTHLY'),
 (1, 11, '2021-08-28 14:00:00', '2021-09-10 15:00:00', 'MONTHLY'),
 (1, 2, '2021-08-17 14:00:00', '2021-08-17 16:00:00', 'MONTHLY'),

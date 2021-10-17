@@ -50,10 +50,13 @@ def add_event_to_google_calendar(json_creds, start_time, end_time, name, recurre
     service = build('calendar', 'v3', credentials=creds)
     body = None
     if recurrence:
+        start_time = start_time.replace(tzinfo = None)
+        end_time = end_time.replace(tzinfo = None)
         body = {"summary" : name, "start" : {"timeZone": str(tzlocal.get_localzone()), "dateTime": start_time.isoformat()}, "end" : {"timeZone": str(tzlocal.get_localzone()), "dateTime": end_time.isoformat()}, 
                 "recurrence" : ['RRULE:FREQ={}'.format(recurrence)]}
     else:
-        body = {"summary" : name, "start" : {"dateTime": start_time.isoformat()}, "end" : {"dateTime": end_time.isoformat()}}
+        body = {"summary" : name, "start" : {"timeZone": str(tzlocal.get_localzone()), "dateTime": start_time.isoformat()}, "end" : {"timeZone": str(tzlocal.get_localzone()), "dateTime": end_time.isoformat()}}
+    print(body)
     service.events().insert(calendarId = "primary", body = body).execute()
     
 class InvalidTokenException(Exception):
