@@ -53,7 +53,7 @@ def fav():
         try:
             db.new_fav(email, name)
             return jsonify([name]), 200
-        except NoSuchActivityException:
+        except db.NoSuchActivityException:
             message = 'Such activity does not exist.'
             return jsonify({'message': message}), 400
         except:
