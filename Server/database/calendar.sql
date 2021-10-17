@@ -163,6 +163,8 @@ BEGIN
     (EXTRACT (isodow FROM r.start_time) <= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) <= EXTRACT (isodow FROM $1) AND (EXTRACT (isodow FROM r.start_time) > EXTRACT (isodow FROM r.end_time)))
     OR
     (EXTRACT (isodow FROM r.start_time) >= EXTRACT (isodow FROM $1) AND EXTRACT (isodow FROM r.end_time) >= EXTRACT (isodow FROM $1) AND (EXTRACT (isodow FROM r.start_time) > EXTRACT (isodow FROM r.end_time)))
+    OR
+    (EXTRACT (isodow FROM r.start_time) = EXTRACT (isodow FROM r.end_time) AND EXTRACT (day FROM r.start_time) != EXTRACT (day FROM r.end_time))
     )
     AND r.start_time < $1 + '1 day'::interval
     AND r.type = 'WEEKLY'
@@ -184,6 +186,8 @@ BEGIN
     (EXTRACT (day FROM r.start_time) <= EXTRACT (day FROM $1) AND EXTRACT (day FROM r.end_time) <= EXTRACT (day FROM $1) AND (EXTRACT (day FROM r.start_time) > EXTRACT (day FROM r.end_time)))
     OR
     (EXTRACT (day FROM r.start_time) >= EXTRACT (day FROM $1) AND EXTRACT (day FROM r.end_time) >= EXTRACT (day FROM $1) AND (EXTRACT (day FROM r.start_time) > EXTRACT (day FROM r.end_time)))
+    OR
+    (EXTRACT (day FROM r.start_time) = EXTRACT (day FROM r.end_time) AND EXTRACT (month FROM r.start_time) != EXTRACT (month FROM r.end_time))
     )
     AND r.start_time < $1 + '1 day'::interval
     AND r.type = 'MONTHLY'
@@ -247,6 +251,8 @@ BEGIN
     (SELECT cmp_timestamp_soe(r.start_time, $1) AND (SELECT cmp_timestamp_soe(r.end_time, $1)) AND (SELECT cmp_timestamp_s(r.end_time, r.start_time)))
     OR
     (SELECT cmp_timestamp_soe($1, r.start_time) AND (SELECT cmp_timestamp_soe($1, r.end_time)) AND (SELECT cmp_timestamp_s(r.end_time, r.start_time)))
+    OR 
+    (SELECT cmp_timestamp_soe(r.start_time, r.end_time) AND (SELECT cmp_timestamp_soe(r.end_time, r.start_time)) AND EXTRACT (year FROM r.start_time) < EXTRACT (year FROM r.end_time))
     )
     AND r.start_time < $1 + '1 day'::interval
     AND r.type = 'YEARLY'
