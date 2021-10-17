@@ -90,8 +90,10 @@ def event():
         message = 'Please specify an activity.'
         return jsonify({'message': message}), 400
     
+    json_creds = json.loads(request.args['credentials'])
+    
     try:
-        email = gs.get_email_from_json_credentials(json.loads(request.args['credentials']))
+        email = gs.get_email_from_json_credentials(json_creds)
     except:
         message = 'Wrong credentials.'
         return jsonify({'message': message}), 400
@@ -103,9 +105,13 @@ def event():
         recurrence = None
         if 'recurrence' in request.args:
             recurrence = request.args['recurrence']
-        json_creds = json.loads(request.args['credentials'])
-        start_date = dateutil.parser.isoparse(request.args['start_date'])
-        end_date = dateutil.parser.isoparse(request.args['end_date'])
+        try:
+            start_date = dateutil.parser.isoparse(request.args['start_date'])
+            end_date = dateutil.parser.isoparse(request.args['end_date'])
+        except:
+            message = 'Date not in an ISO format.'
+            return jsonify({'message': message}), 400
+            
         name = request.args['name']
         if start_date >= end_date:
             message = 'Event ends before it starts.'
@@ -131,7 +137,11 @@ def event():
         return jsonify(request.args['name']), 200
     
     if request.method == 'GET':
-        date = dateutil.parser.isoparse(request.args['date'])
+        try:
+            date = dateutil.parser.isoparse(request.args['date'])
+        except:
+            message = 'Date not in an ISO format.'
+            return jsonify({'message': message}), 400
         try:
             res = {'activities' : db.get_activities(date, email)}
             return jsonify(res)
