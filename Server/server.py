@@ -4,13 +4,14 @@ from flask import request, jsonify
 import json
 import datetime
 import dateutil.parser
-import database as db
-import google_service as gs
+import database.db as db
+import googleservice.gs as gs
 import google.oauth2.credentials
 
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
+db.start_db()
 
 @app.route('/lall', methods=['GET'])
 def list_all():
