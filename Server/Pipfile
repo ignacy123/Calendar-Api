@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+datetime = "*"
+google = "*"
+psycopg2-binary = "*"
+configparser = "*"
+google-auth-oauthlib = "*"
+tzlocal = "*"
+google-api-python-client = "*"
+googleapi = "*"
+google-auth = "*"
+python-dateutil = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"

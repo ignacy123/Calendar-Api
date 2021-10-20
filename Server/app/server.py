@@ -1,15 +1,14 @@
 #!/bin/python3
 import flask 
+from flask import Flask
 from flask import request, jsonify
 import sys
 import json
-import datetime
 import dateutil.parser
 import database.db as db
 import googleservice.gs as gs
-import google.oauth2.credentials
 
-app = flask.Flask(__name__)
+app = Flask(__name__)
 app.config["DEBUG"] = True
 
 @app.route('/lall', methods=['GET'])
@@ -182,6 +181,7 @@ def main():
         sys.exit(-1)
     app.register_error_handler(400, handle_bad_request)
     app.run()
+
 
 if __name__ == '__main__':
     main()
