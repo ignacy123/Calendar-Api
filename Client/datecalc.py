@@ -47,7 +47,9 @@ def calculate_start_end_weekly(date, start_date, end_date):
         new_start_date_late = date.replace(hour = start_date.hour, minute = start_date.minute)
         new_end_date_late = date + timedelta(days = 7)
         new_end_date_late = new_end_date_late.replace(hour = end_date.hour, minute = end_date.minute)
-        return [new_start_date_early, new_start_date_late], [new_end_date_early, new_end_date_late]
+        if date.date() != start_date.date():
+            return [new_start_date_early, new_start_date_late], [new_end_date_early, new_end_date_late]
+        return [new_start_date_late], [new_end_date_late]
     else:
         #to accomodate for rounding error
         delta = date - start_date + timedelta(days = 1)
@@ -85,12 +87,14 @@ def calculate_start_end_monthly(date, start_date, end_date):
         return [new_start_date], [new_end_date]
     
 def calculate_start_end_yearly(date, start_date, end_date):
-    if start_date.month == end_date.month and start_date.day == end_date.day and start_date.year == end_date.year+1 and start_date.month == date.month and start_date.day == date.day:
+    if start_date.month == end_date.month and start_date.day == end_date.day and start_date.year == end_date.year-1 and start_date.month == date.month and start_date.day == date.day:
         new_start_date_early = start_date.replace(year = date.year-1)
         new_end_date_early = end_date.replace(year = date.year)
         new_start_date_late = start_date.replace(year = date.year)
         new_end_date_late = end_date.replace(year = date.year+1)
-        return [new_start_date_early, new_start_date_late], [new_end_date_early, new_end_date_late]
+        if date.date() != start_date.date():
+            return [new_start_date_early, new_start_date_late], [new_end_date_early, new_end_date_late]
+        return [new_start_date_late], [new_end_date_late]
     elif start_date.year == end_date.year-1 and (start_date.month < date.month or (start_date.month == date.month and start_date.day <= date.day)):
         new_start_date = start_date.replace(year = date.year)
         new_end_date = end_date.replace(year = date.year+1)

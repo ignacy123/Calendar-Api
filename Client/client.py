@@ -56,7 +56,11 @@ def list_fav():
         
 def add_new_fav():
     token = get_token()
-    name = get_activity_name(list_all)
+    try:
+        name = get_activity_name(list_all)
+    except:
+        print("Cancelled.")
+        return
     params = {'name' : name, 'token' : token}
     try:
         r = requests.put(FAV_PATH, params = params)
@@ -70,7 +74,11 @@ def add_new_fav():
     
 def del_fav():
     token = get_token()
-    name = get_activity_name(list_fav)
+    try:
+        name = get_activity_name(list_fav)
+    except:
+        print("Cancelled.")
+        return
     params = {'name' : name, 'token' : token}
     try:
         r = requests.delete(FAV_PATH, params = params)
@@ -90,7 +98,11 @@ def add_event():
     end_date = picker.pick_date()
     recurrence = picker.pick_recurrence()
     token = get_token()
-    name = get_activity_name(list_fav)
+    try:
+        name = get_activity_name(list_fav)
+    except:
+        print("Cancelled.")
+        return
     params = {'token' : token, 'name' : name, 'start_date' : start_date, 'end_date' : end_date}
     if recurrence:
         params['recurrence'] = recurrence
@@ -171,15 +183,14 @@ def get_token():
 
 def get_activity_name(f):
     print("Choose activity (number):")
+    print("Press enter to abandon.")
     activities = f()
     while True:
         number = int(input())
         cands = [(x, y) for (x, y) in activities if x == number]
         if(len(cands) > 0): return cands[0][1]
         print("Wrong number. Try again.")
-        
 
-            
 def event_from_list(x):
     event = dict()
     event['name'] = x[0]
@@ -202,6 +213,7 @@ def print_help():
     print("dfav - delete a favourite activity")
     print("ae - add a new event to the calendar")
     print("le - list events for a given day")
+    print("exit - exit")
 
 check_token()
 for line in sys.stdin:
@@ -223,6 +235,8 @@ for line in sys.stdin:
         add_event()
     elif words[0] == 'le':
         list_events()
+    elif words[0] == 'exit':
+        sys.exit(0)
     else:
         print_help()
         

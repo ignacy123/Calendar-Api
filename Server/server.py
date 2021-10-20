@@ -9,7 +9,6 @@ import database.db as db
 import googleservice.gs as gs
 import google.oauth2.credentials
 
-
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
@@ -146,7 +145,6 @@ def event():
             message = 'Database error.'
             return jsonify({'message': message}), 400
         
-    
 @app.route('/email', methods=['GET'])
 def email():
     if 'token' not in request.args:
