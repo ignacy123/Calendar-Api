@@ -1,4 +1,4 @@
-CREATE SCHEMA IF NOT EXISTS test;
+CREATE SCHEMA IF NOT EXISTS calendar;
 DROP TABLE IF EXISTS activities CASCADE;
 CREATE TABLE activities (
     id                          serial NOT NULL,
@@ -295,6 +295,8 @@ INSERT INTO activities (name) VALUES
 ('volleyball'),
 ('gym');
 
+
+/*
 INSERT INTO email (email) VALUES ('ignacy.buczek@onet.pl');
 
 INSERT INTO fav_activities (email_id, activity_id) VALUES
@@ -339,3 +341,5 @@ INSERT INTO recurrent_events (email_id, activity_id, start_time, end_time, type)
 (1, 11, '2020-07-09 20:00:00', '2021-01-10 21:00:00', 'YEARLY'),
 (1, 11, '2020-05-05 20:00:00', '2020-05-05 21:00:00', 'YEARLY'),
 (1, 4, '2020-03-03 20:00:00', '2020-07-07 21:00:00', 'YEARLY');
+*/
+
