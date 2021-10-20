@@ -45,7 +45,7 @@ def list_fav():
         r = requests.get(FAV_PATH, params = params)
     except:
         error()
-    if r.status_code == 400 and r.content.decode('UTF-8') == 'Wrong token.':
+    if r.status_code == 401:
         print("Your token is corrupt (expired or incorrect). Please log in with Google.")
         os.remove('token.json')
         return list_fav()
@@ -158,7 +158,7 @@ def check_token():
                 r = requests.get(EMAIL_PATH, params = params)
             except:
                 error()
-            if r.status_code == 400:
+            if r.status_code == 401:
                 os.remove('token.json')
                 print("Invalid token. Please log into the app with Google.")
                 obtain_token()

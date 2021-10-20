@@ -25,7 +25,7 @@ def list_all():
 def fav():
     if 'token' not in request.args:
         message = 'Please provide a Google Authentication token.'
-        return jsonify({'message': message}), 400
+        return jsonify({'message': message}), 401
     if 'name' not in request.args and (flask.request.method == 'PUT' or flask.request.method == 'DELETE'):
         message = 'Please provide a name.'
         return jsonify({'message': message}), 400
@@ -36,7 +36,7 @@ def fav():
         email = gs.get_email_from_json_credentials(creds_json)
     except:
         message = 'Wrong credentials.'
-        return jsonify({'message': message}), 400
+        return jsonify({'message': message}), 401
     
     if request.method == 'GET':
         try:
@@ -73,7 +73,7 @@ def fav():
 def event():
     if 'token' not in request.args:
         message = 'Please provide a Google Authentication token.'
-        return jsonify({'message': message}), 400
+        return jsonify({'message': message}), 401
     if 'start_date' not in request.args and request.method == 'PUT':
         message = 'Please choose a start_date.'
         return jsonify({'message': message}), 400
@@ -93,7 +93,7 @@ def event():
         email = gs.get_email_from_json_credentials(creds_json)
     except:
         message = 'Wrong credentials.'
-        return jsonify({'message': message}), 400
+        return jsonify({'message': message}), 401
     
     if request.method == 'PUT':
         if 'recurrence' in request.args and request.args['recurrence'] not in ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']:
@@ -151,14 +151,14 @@ def event():
 def email():
     if 'token' not in request.args:
         message = 'Please provide a Google Authentication token.'
-        return jsonify({'message': message}), 400
+        return jsonify({'message': message}), 401
     try:
         creds_json = gs.token_to_creds_json(json.loads(request.args['token']))
         email = gs.get_email_from_json_credentials(creds_json)
         return jsonify({'email' : email})
     except:
         message = 'Wrong credentials.'
-        return jsonify({'message': message}), 400
+        return jsonify({'message': message}), 401
     
 #Google OAuth2 related
 @app.route('/access')
