@@ -24,7 +24,6 @@ def get_conn():
     return conn
     
 def start_db(filename='calendar.sql'):
-    print("starting db")
     with get_conn() as conn:
         with conn.cursor() as cur:
             data = pkgutil.get_data(__package__, filename).decode()

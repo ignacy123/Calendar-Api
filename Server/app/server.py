@@ -11,7 +11,6 @@ import googleservice.gs as gs
 app = Flask(__name__)
 app.config["DEBUG"] = True
 try:
-    print("starting db")
     db.start_db()
 except:
     print("Could not start db. Aborting")
@@ -22,10 +21,11 @@ def handle_bad_request(e):
     return jsonify({'message': message}), 400
 app.register_error_handler(400, handle_bad_request)
 
-@app.route('/lall', methods=['GET'])
+@app.route('/all', methods=['GET'])
 def list_all():
     try:
-        return jsonify(db.all_activities())
+        all_act = db.all_activities()
+        return jsonify({'activities' : all_act})
     except:
         message = 'Database error.'
         return jsonify({'message': message}), 400
@@ -39,9 +39,8 @@ def fav():
         message = 'Please provide a name.'
         return jsonify({'message': message}), 400
     
-    creds_json = gs.token_to_creds_json(json.loads(request.args['token']))
-    
     try:
+        creds_json = gs.token_to_creds_json(json.loads(request.args['token']))
         email = gs.get_email_from_json_credentials(creds_json)
     except:
         message = 'Wrong credentials.'
@@ -49,7 +48,8 @@ def fav():
     
     if request.method == 'GET':
         try:
-            return jsonify(db.fav_activities(email))
+            fav_act = db.fav_activities(email)
+            return jsonify({'activities' : fav_act})
         except:
             message = 'Database error.'
             return jsonify({'message': message}), 400
@@ -96,9 +96,8 @@ def event():
         message = 'Please specify an activity.'
         return jsonify({'message': message}), 400
     
-    creds_json = gs.token_to_creds_json(json.loads(request.args['token']))
-    
     try:
+        creds_json = gs.token_to_creds_json(json.loads(request.args['token']))
         email = gs.get_email_from_json_credentials(creds_json)
     except:
         message = 'Wrong credentials.'

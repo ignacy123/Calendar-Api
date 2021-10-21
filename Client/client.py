@@ -1,13 +1,12 @@
 #!/bin/python3
-import os.path
 import sys
 import argparse
 import webbrowser
 import requests
-import json
 
 import picker
 import datecalc as dc
+import googleservice as gs
 
 PATH = "http://localhost:5000"
 parser = argparse.ArgumentParser()
@@ -15,18 +14,24 @@ parser.add_argument('--path', default=PATH)
 args = parser.parse_args()
 
 ACCESS_PATH = args.path+"/access"
+gs.ACCESS_PATH = ACCESS_PATH
 EMAIL_PATH = args.path+"/email"
-LIST_ALL_PATH = args.path+"/lall"
+gs.EMAIL_PATH = EMAIL_PATH
+LIST_ALL_PATH = args.path+"/all"
 FAV_PATH = args.path+"/fav"
 EVENT_PATH = args.path+"/event"
-    
+
 def get_email():
-    token = get_token()
+    token = gs.get_token()
     params = {'token': token}
     try:
         r = requests.get(EMAIL_PATH, params = params)
     except:
         error()
+    if r.status_code == 401:
+        print("Corrupt token.")
+        os.remove('token.json')
+        return
     print(r.json()['email'])
     
 def list_all():
@@ -34,28 +39,30 @@ def list_all():
         r = requests.get(LIST_ALL_PATH)
     except:
         error()
-    for x in r.json():
+    activities = r.json()['activities']
+    for x in activities:
         print("{} - {}".format(x[0], x[1]))
-    return r.json()
+    return activities
 
 def list_fav():
-    token = get_token()
+    token = gs.get_token()
     params = {'token': token}
     try:
         r = requests.get(FAV_PATH, params = params)
     except:
         error()
     if r.status_code == 401:
-        print("Your token is corrupt (expired or incorrect). Please log in with Google.")
+        print("Corrupt token.")
         os.remove('token.json')
-        return list_fav()
-    for x in r.json():
+        return
+    activities = r.json()['activities']
+    for x in activities:
         print("{} - {}".format(x[0], x[1]))
-    return r.json()
+    return activities
     
         
 def add_new_fav():
-    token = get_token()
+    token = gs.get_token()
     try:
         name = get_activity_name(list_all)
     except:
@@ -66,6 +73,10 @@ def add_new_fav():
         r = requests.put(FAV_PATH, params = params)
     except:
         error()
+    if r.status_code == 401:
+        print("Corrupt token.")
+        os.remove('token.json')
+        return
     if r.status_code == 200:
         print("Successfully added.")
         print(r.json())
@@ -73,7 +84,7 @@ def add_new_fav():
         print(r.json())
     
 def del_fav():
-    token = get_token()
+    token = gs.get_token()
     try:
         name = get_activity_name(list_fav)
     except:
@@ -84,20 +95,21 @@ def del_fav():
         r = requests.delete(FAV_PATH, params = params)
     except:
         error()
+    if r.status_code == 401:
+        print("Corrupt token.")
+        os.remove('token.json')
+        return
     if r.status_code == 200:
         print("Successfully deleted.")
-        print(r.json())
-    else: 
-        print(r.json())
+    print(r.json())
     
 def add_event():
-    token = get_token()
+    token = gs.get_token()
     print("Choose start date (yy/mm/dd hh:mm):")
     start_date = picker.pick_date()
     print("Choose end date (yy/mm/dd hh:mm):")
     end_date = picker.pick_date()
     recurrence = picker.pick_recurrence()
-    token = get_token()
     try:
         name = get_activity_name(list_fav)
     except:
@@ -110,10 +122,14 @@ def add_event():
         r = requests.put(EVENT_PATH, params = params)
     except:
         error()
+    if r.status_code == 401:
+        print("Corrupt token.")
+        os.remove('token.json')
+        return
     print(r.json())
 
 def list_events():
-    token = get_token()
+    token = gs.get_token()
     print("Choose start date (yy/mm/dd):")
     date = picker.pick_date(hours_minutes = False)
     params = {'token' : token, 'date' : date}
@@ -121,6 +137,10 @@ def list_events():
         r = requests.get(EVENT_PATH, params = params)
     except:
         error()
+    if r.status_code == 401:
+        print("Corrupt token.")
+        os.remove('token.json')
+        return
     if r.status_code != 200:
         print(r.json())
         return
@@ -135,52 +155,6 @@ def list_events():
             print("{}, start: {}, end: {}, recurrent: {}".format(event['name'], dc.format_date(x), dc.format_date(y), event['recurrence'] if event['recurrence'] else 'No'))
             print()
     
-def obtain_token():
-    try:
-        r = requests.get(ACCESS_PATH)
-    except:
-        error()
-    if r.status_code != 200:
-        error()
-    print("Paste the token here:")
-    access_url = r.json()['url']
-    webbrowser.open(access_url)
-    with open('token.json', 'w') as token_file:
-        while True:
-            line = input()
-            token_file.write(line)
-            if line.endswith('}'):
-                break
-            
-def check_token():
-    if not os.path.exists('token.json'):
-        print("Currently you are not logged in. Please log into the app with Google.")
-        obtain_token()
-        return
-    else:
-        with open('token.json',) as f:
-            try:
-                token = json.dumps(json.load(f))
-            except:
-                print("Invalid token. Please log into the app with Google.")
-                obtain_token()
-                return
-            params = {'token' : token}
-            try:
-                r = requests.get(EMAIL_PATH, params = params)
-            except:
-                error()
-            if r.status_code == 401:
-                os.remove('token.json')
-                print("Invalid token. Please log into the app with Google.")
-                obtain_token()
-        
-def get_token():
-    check_token()
-    with open('token.json',) as f:
-        data = json.load(f)
-        return json.dumps(data)
-
 def get_activity_name(f):
     print("Choose activity (number):")
     print("Press enter to abandon.")
@@ -215,7 +189,7 @@ def print_help():
     print("le - list events for a given day")
     print("exit - exit")
 
-check_token()
+gs.check_token()
 for line in sys.stdin:
     if line=='\n': continue
     words = line.split()
@@ -239,7 +213,3 @@ for line in sys.stdin:
         sys.exit(0)
     else:
         print_help()
-        
-    
-    
-        
