@@ -10,6 +10,17 @@ import googleservice.gs as gs
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
+try:
+    print("starting db")
+    db.start_db()
+except:
+    print("Could not start db. Aborting")
+    sys.exit(-1)
+
+def handle_bad_request(e):
+    message = 'Bad request!'
+    return jsonify({'message': message}), 400
+app.register_error_handler(400, handle_bad_request)
 
 @app.route('/lall', methods=['GET'])
 def list_all():
@@ -169,19 +180,6 @@ def callback():
     token_json = {'token' : creds_json['token'], 'refresh_token' : creds_json['refresh_token']}
     return token_json, 200
 
-def handle_bad_request(e):
-    message = 'Bad request!'
-    return jsonify({'message': message}), 400
-
-def main():
-    try:
-        db.start_db()
-    except:
-        print("Could not start db. Aborting")
-        sys.exit(-1)
-    app.register_error_handler(400, handle_bad_request)
+if __name__ == '__main__':
     app.run()
 
-
-if __name__ == '__main__':
-    main()
