@@ -2,9 +2,9 @@ Google/*
 Client/token.json
 Client/http_client.py
 Client/__pycache__/*
-Server/app/flask
-Server/app/__pycache__/*
-Server/app/googleservice/client_secret.json
-Server/app/googleservice/__pycache__/*
-Server/app/database/__pycache__/*
-Server/app/database/database.ini
+Server/src/flask
+Server/src/__pycache__/*
+Server/src/googleservice/client_secret.json
+Server/src/googleservice/__pycache__/*
+Server/src/database/__pycache__/*
+Server/src/database/database.ini

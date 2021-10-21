@@ -5,8 +5,8 @@ from flask import request, jsonify
 import sys
 import json
 import dateutil.parser
-import database.db as db
-import googleservice.gs as gs
+import src.database.db as db
+import src.googleservice.gs as gs
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -40,8 +40,8 @@ def fav():
         return jsonify({'message': message}), 400
     
     try:
-        creds_json = gs.token_to_creds_json(json.loads(request.args['token']))
-        email = gs.get_email_from_json_credentials(creds_json)
+        token_dict = json.loads(request.args['token'])
+        email = gs.get_email_from_token_dict(token_dict)
     except:
         message = 'Wrong credentials.'
         return jsonify({'message': message}), 401

@@ -4,16 +4,6 @@ import requests
 import sys
 import argparse
 
-PATH = "http://localhost:5000"
-parser = argparse.ArgumentParser()
-parser.add_argument('--path', default=PATH)
-args = parser.parse_args()
-
-ACCESS_PATH = args.path+"/access"
-EMAIL_PATH = args.path+"/email"
-LIST_ALL_PATH = args.path+"/all"
-FAV_PATH = args.path+"/fav"
-EVENT_PATH = args.path+"/event"
     
 def error():
     print("Server down, aborting.")

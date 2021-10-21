@@ -45,6 +45,11 @@ def get_email_from_json_credentials(json_creds):
     user_info = service.userinfo().get().execute()
     return user_info['email']
 
+def get_email_from_token_dict(token_dict):
+    creds_json = token_to_creds_json(json.loads(request.args['token']))
+    email = get_email_from_json_credentials(creds_json)
+    return email
+
 def add_event_to_google_calendar(json_creds, start_time, end_time, name, recurrence):
     creds = Credentials.from_authorized_user_info(json_creds, SCOPES)
     service = build('calendar', 'v3', credentials=creds)
