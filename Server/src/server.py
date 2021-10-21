@@ -40,8 +40,7 @@ def fav():
         return jsonify({'message': message}), 400
     
     try:
-        token_dict = json.loads(request.args['token'])
-        email = gs.get_email_from_token_dict(token_dict)
+        creds_json, email = gs.token_to_creds_json_and_email(json.loads(request.args['token']))
     except:
         message = 'Wrong credentials.'
         return jsonify({'message': message}), 401
@@ -95,18 +94,17 @@ def event():
     if 'name' not in request.args and request.method == 'PUT':
         message = 'Please specify an activity.'
         return jsonify({'message': message}), 400
+    if 'recurrence' in request.args and request.args['recurrence'] not in ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] and request.method == 'PUT':
+        message = 'Unknown recurrence.'
+        return jsonify({'message': message}), 400
     
     try:
-        creds_json = gs.token_to_creds_json(json.loads(request.args['token']))
-        email = gs.get_email_from_json_credentials(creds_json)
+        creds_json, email = gs.token_to_creds_json_and_email(json.loads(request.args['token']))
     except:
         message = 'Wrong credentials.'
         return jsonify({'message': message}), 401
     
     if request.method == 'PUT':
-        if 'recurrence' in request.args and request.args['recurrence'] not in ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']:
-            message = 'Unknown recurrence.'
-            return jsonify({'message': message}), 400
         recurrence = None
         if 'recurrence' in request.args:
             recurrence = request.args['recurrence']
@@ -124,7 +122,7 @@ def event():
         try:
             fav_activities = db.fav_activities(email)
         except:
-            message = 'Database error.'
+            message = 'Database error when extracting favourite activities.'
             return jsonify({'message': message}), 400
         if name not in [y for x, y in fav_activities]:
             message = 'Activity has to be a favourite.'
@@ -139,7 +137,9 @@ def event():
         except:
             message = 'Saved to database but failed to upload to Google.'
             return jsonify({'message': message}), 400
-        return jsonify({'name' : name, 'start_date' : start_date, 'end_date' : end_date, 'recurrence' : recurrence}), 200
+        org_start_date = request.args['start_date']
+        org_end_date = request.args['end_date']
+        return jsonify({'name' : name, 'start_date' : org_start_date, 'end_date' : org_end_date, 'recurrence' : recurrence}), 200
     
     if request.method == 'GET':
         try:
@@ -160,8 +160,7 @@ def email():
         message = 'Please provide a Google Authentication token.'
         return jsonify({'message': message}), 401
     try:
-        creds_json = gs.token_to_creds_json(json.loads(request.args['token']))
-        email = gs.get_email_from_json_credentials(creds_json)
+        creds_json, email = gs.token_to_creds_json_and_email(json.loads(request.args['token']))
         return jsonify({'email' : email})
     except:
         message = 'Wrong credentials.'

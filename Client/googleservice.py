@@ -3,6 +3,7 @@ import json
 import requests
 import sys
 import argparse
+import webbrowser
 
     
 def error():
