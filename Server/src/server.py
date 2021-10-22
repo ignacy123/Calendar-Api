@@ -10,6 +10,7 @@ import src.googleservice.gs as gs
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
+
 try:
     db.start_db()
 except:

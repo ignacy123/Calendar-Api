@@ -29,6 +29,12 @@ def start_db(filename='calendar.sql'):
             data = pkgutil.get_data(__package__, filename).decode()
             cur.execute(data)
             
+def drop_db(filename='drop.sql'):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            data = pkgutil.get_data(__package__, filename).decode()
+            cur.execute(data)
+            
 def all_activities():
     with get_conn() as conn:
         with conn.cursor() as cur:

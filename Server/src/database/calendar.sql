@@ -1,4 +1,4 @@
-CREATE SCHEMA IF NOT EXISTS calendar;
+CREATE SCHEMA IF NOT EXISTS public;
 DROP TABLE IF EXISTS activities CASCADE;
 CREATE TABLE activities (
     id                          serial NOT NULL,

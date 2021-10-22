@@ -8,3 +8,4 @@ Server/src/googleservice/client_secret.json
 Server/src/googleservice/__pycache__/*
 Server/src/database/__pycache__/*
 Server/src/database/database.ini
+Server/test/database/test_database.ini
