@@ -15,6 +15,12 @@ datetime7 = datetime(year=2022, month=10, day=19, hour=10, minute=10)
 datetime8 = datetime(year=2021, month=10, day=29, hour=10, minute=10)
 datetime9 = datetime(year=2021, month=11, day=5, hour=10, minute=10)
 
+datetime10 = datetime(year=2021, month=10, day=19, hour=12, minute=10)
+
+datetime11 = datetime(year=2021, month=11, day=3, hour=10, minute=10)
+
+datetime12 = datetime(year=2022, month=4, day=30, hour=10, minute=10)
+
 weird_activity = 'weird activity that for sure is not in the db'
 weird_recurrence = 'YDWIDWHU'
     
@@ -33,3 +39,30 @@ def fake_config(filename='test_database.ini', section='postgresql'):
     else:
         raise Exception('Section {0} not found in the {1} file'.format(section, filename))
     return db 
+
+def date_minus_one_month(date):
+    prev_month = date.month-1 if date.month > 1 else 12
+    year_of_prev_month = date.year if date.month > 1 else date.year - 1
+    return date.replace(year = year_of_prev_month, month = prev_month)
+
+def date_minus_x_months(date, x):
+    for _ in range(x):
+        date = date_minus_one_month(date)
+    return date
+
+def date_plus_one_month(date):
+    next_month = date.month+1 if date.month < 12 else 1
+    year_of_next_month = date.year if date.month < 12 else date.year + 1
+    return date.replace(year = year_of_next_month, month = next_month)
+
+def date_plus_x_months(date, x):
+    for _ in range(x):
+        date = date_plus_one_month(date)
+    return date
+
+def date_minus_x_years(date, x):
+    return date.replace(year = date.year-x)
+
+def date_plus_x_years(date, x):
+    return date.replace(year = date.year+x)
+    
