@@ -34,6 +34,26 @@ def drop_db(filename='drop.sql'):
         with conn.cursor() as cur:
             data = pkgutil.get_data(__package__, filename).decode()
             cur.execute(data)
+
+def get_email_id(email):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM email WHERE email = %s", (email, ))
+            if cur.rowcount == 0:
+                cur.execute("INSERT INTO email (email) VALUES (%s)", (email, ))
+                conn.commit()
+                cur.execute("SELECT * FROM email WHERE email = %s", (email, ))
+            id = cur.fetchone()[0]
+            return id
+
+def get_activity_id(name):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM activities WHERE name = %s", (name, ))
+            if cur.rowcount == 0:
+                raise NoSuchActivityException("Getting id of a non-existent activity")
+            id = cur.fetchone()[0]
+            return id
             
 def all_activities():
     with get_conn() as conn:
@@ -50,27 +70,6 @@ def fav_activities(email):
             cur.execute("SELECT activities.id, name FROM fav_activities LEFT OUTER JOIN activities ON activities.id = fav_activities.activity_id WHERE email_id = %s;", (email_id, ))
             rows = cur.fetchall()
             return rows
-    
-
-def get_activity_id(name):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM activities WHERE name = %s", (name, ))
-            if cur.rowcount == 0:
-                raise NoSuchActivityException("Getting id of a non-existent activity")
-            id = cur.fetchone()[0]
-            return id
-
-def get_email_id(email):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM email WHERE email = %s", (email, ))
-            if cur.rowcount == 0:
-                cur.execute("INSERT INTO email (email) VALUES (%s)", (email, ))
-                conn.commit()
-                cur.execute("SELECT * FROM email WHERE email = %s", (email, ))
-            id = cur.fetchone()[0]
-            return id
 
 def new_fav(email, name):
     activity_id = get_activity_id(name)
